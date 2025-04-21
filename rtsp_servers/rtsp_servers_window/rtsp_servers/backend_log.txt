@@ -1,0 +1,26 @@
+INFO:__main__:백엔드 서버 시작 중...
+2025-04-16 15:06:57,612 - INFO - Started server process [516624]
+2025-04-16 15:06:57,612 - INFO - Waiting for application startup.
+2025-04-16 15:06:57,613 - INFO - Application startup complete.
+2025-04-16 15:06:57,613 - INFO - Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-04-16 15:07:08,517 - INFO - 127.0.0.1:9349 - "GET / HTTP/1.1" 200
+2025-04-16 15:07:19,600 - INFO - 127.0.0.1:9377 - "GET /servers HTTP/1.1" 200
+2025-04-16 15:07:19,601 - INFO - 127.0.0.1:9378 - "GET /locations HTTP/1.1" 200
+2025-04-16 15:07:19,601 - INFO - 127.0.0.1:9379 - "GET /processes HTTP/1.1" 200
+2025-04-16 15:07:24,296 - INFO - 127.0.0.1:9390 - "GET /location_mapping HTTP/1.1" 200
+2025-04-16 15:07:24,296 - INFO - 127.0.0.1:9391 - "GET /cameras HTTP/1.1" 200
+2025-04-16 15:07:24,328 - INFO - 127.0.0.1:9393 - "GET /camera/status?name=1so HTTP/1.1" 200
+2025-04-16 15:07:24,359 - INFO - 127.0.0.1:9395 - "GET /camera/status?name=2so HTTP/1.1" 200
+2025-04-16 15:07:24,376 - INFO - 127.0.0.1:9397 - "GET /camera/status?name=1se HTTP/1.1" 200
+2025-04-16 15:07:24,400 - INFO - 127.0.0.1:9400 - "GET /camera/status?name=2se HTTP/1.1" 200
+2025-04-16 15:07:24,424 - INFO - 127.0.0.1:9403 - "GET /camera/status?name=3se HTTP/1.1" 200
+2025-04-16 15:07:24,435 - INFO - 127.0.0.1:9406 - "GET /camera/status?name=2gan HTTP/1.1" 200
+2025-04-16 15:07:24,454 - INFO - 127.0.0.1:9409 - "GET /camera/status?name=3gan HTTP/1.1" 200
+2025-04-16 15:07:24,466 - INFO - 127.0.0.1:9412 - "GET /camera/status?name=4gan HTTP/1.1" 200
+2025-04-16 15:07:24,481 - INFO - 127.0.0.1:9415 - "GET /camera/status?name=5gan HTTP/1.1" 200
+2025-04-16 15:07:24,496 - INFO - 127.0.0.1:9418 - "GET /camera/status?name=6gan HTTP/1.1" 200
+2025-04-16 15:07:24,510 - INFO - 127.0.0.1:9421 - "GET /camera/status?name=7gan HTTP/1.1" 200
+2025-04-16 15:07:24,526 - INFO - 127.0.0.1:9424 - "GET /camera/status?name=8gan HTTP/1.1" 200
+2025-04-16 15:07:24,541 - INFO - 127.0.0.1:9427 - "GET /camera/status?name=9gan HTTP/1.1" 200
+2025-04-16 15:07:24,556 - INFO - 127.0.0.1:9430 - "GET /camera/status?name=10gan HTTP/1.1" 200
+2025-04-16 15:07:24,570 - INFO - 127.0.0.1:9433 - "GET /camera/status?name=11gan HTTP/1.1" 200
