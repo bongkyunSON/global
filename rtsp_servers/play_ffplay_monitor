@@ -1,0 +1,69 @@
+def play_ffplay_monitor(rtsp_url, location):
+    """녹화 중인 영상을 모니터링 (mpv 또는 ffplay 사용)"""
+    # mpv 명령어 설정
+    cmd = [
+        'mpv',
+        '--rtsp-transport=tcp',
+        rtsp_url,
+        '--geometry=640x480',
+        '--force-window=yes',
+        '--window-title', f'{location} (녹화 모니터링 중)'
+    ]
+    
+    # mpv 실행 경로 확인 (크로스 플랫폼)
+    try:
+        process = Popen(cmd)
+        rtsp_processes.append(process)  # 모니터링용 프로세스도 rtsp 목록에 추가
+        logger.info(f"MPV로 녹화 모니터링 시작: {rtsp_url}")
+        return process.pid
+    except FileNotFoundError:
+        # Mac Homebrew 설치 경로 시도
+        try:
+            cmd[0] = '/opt/homebrew/bin/mpv'  # Homebrew에서 설치한 경우 (Apple Silicon Mac)
+            process = Popen(cmd)
+            rtsp_processes.append(process)
+            logger.info(f"Homebrew 경로에서 MPV로 녹화 모니터링 시작: {rtsp_url}")
+            return process.pid
+        except Exception as e:
+            try:
+                cmd[0] = '/usr/local/bin/mpv'  # Intel Mac에서 Homebrew로 설치한 경우
+                process = Popen(cmd)
+                rtsp_processes.append(process)
+                logger.info(f"Intel Mac Homebrew 경로에서 MPV로 녹화 모니터링 시작: {rtsp_url}")
+                return process.pid
+            except Exception as e:
+                logger.error(f"MPV 실행 오류, ffplay로 대체 시도: {e}")
+                
+                # mpv 실패 시 ffplay 사용 시도
+                cmd = [
+                    'ffplay',
+                    '-rtsp_transport', 'tcp',
+                    '-i', rtsp_url,
+                    '-x', '640',
+                    '-y', '480',
+                    '-window_title', f'{location} (녹화 모니터링 중)'
+                ]
+                
+                try:
+                    process = Popen(cmd)
+                    rtsp_processes.append(process)
+                    logger.info(f"ffplay로 녹화 모니터링 시작: {rtsp_url}")
+                    return process.pid
+                except FileNotFoundError:
+                    # Mac Homebrew 설치 경로 시도
+                    try:
+                        cmd[0] = '/opt/homebrew/bin/ffplay'  # Homebrew에서 설치한 경우 (Apple Silicon Mac)
+                        process = Popen(cmd)
+                        rtsp_processes.append(process)
+                        logger.info(f"Homebrew 경로에서 ffplay로 녹화 모니터링 시작: {rtsp_url}")
+                        return process.pid
+                    except Exception as e:
+                        try:
+                            cmd[0] = '/usr/local/bin/ffplay'  # Intel Mac에서 Homebrew로 설치한 경우
+                            process = Popen(cmd)
+                            rtsp_processes.append(process)
+                            logger.info(f"Intel Mac Homebrew 경로에서 ffplay로 녹화 모니터링 시작: {rtsp_url}")
+                            return process.pid
+                        except Exception as e:
+                            logger.error(f"녹화 모니터링 실행 오류: {e}")
+                            return None 

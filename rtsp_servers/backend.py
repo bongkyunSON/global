@@ -103,6 +103,7 @@ class StreamRequest(BaseModel):
     location: str
     ip: str
     stream_key: Optional[str] = None
+    bitrate: Optional[int] = 3000  # 기본 비트레이트는 3000Kbps
 
 class CameraControl(BaseModel):
     camera_name: str
@@ -117,39 +118,133 @@ class ProcessInfo(BaseModel):
     stream_key: Optional[str] = None
 
 # ============ 헬퍼 함수 ============
+def create_mpv_input_conf():
+    """MPV 플레이어를 위한 단축키 설정 파일 생성"""
+    mpv_config_dir = os.path.join(os.path.expanduser("~"), ".config", "mpv")
+    if not os.path.exists(mpv_config_dir):
+        os.makedirs(mpv_config_dir, exist_ok=True)
+    
+    input_conf_path = os.path.join(mpv_config_dir, "input.conf")
+    
+    # 음량을 미세하게 조절하는 키 설정
+    config_content = """
+# 음량 조절 단축키
+9 add volume -2         # 9키: 음량 감소 (기본값 -5보다 작게)
+0 add volume 2          # 0키: 음량 증가 (기본값 5보다 작게)
+- add volume -10        # -키: 음량 크게 감소
+= add volume 10         # =키: 음량 크게 증가
+m cycle mute           # m키: 음소거 토글
+/ cycle mute           # /키: 음소거 토글 (추가 키)
+
+# 일시정지 및 재생 관련
+SPACE cycle pause      # 스페이스바: 일시정지/재생
+p cycle pause          # p키: 일시정지/재생
+
+# 탐색 관련
+RIGHT seek 5           # 오른쪽 화살표: 5초 앞으로
+LEFT seek -5           # 왼쪽 화살표: 5초 뒤로
+UP seek 30             # 위쪽 화살표: 30초 앞으로
+DOWN seek -30          # 아래쪽 화살표: 30초 뒤로
+PGUP seek 60           # Page Up: 1분 앞으로
+PGDWN seek -60         # Page Down: 1분 뒤로
+
+# 전체화면 관련
+f cycle fullscreen     # f키: 전체화면 전환
+ESC set fullscreen no  # ESC: 전체화면 종료
+"""
+    
+    # 파일이 없거나 내용이 다른 경우에만 쓰기
+    if not os.path.exists(input_conf_path):
+        with open(input_conf_path, 'w') as f:
+            f.write(config_content)
+        logger.info(f"MPV 단축키 설정 파일 생성: {input_conf_path}")
+    else:
+        with open(input_conf_path, 'r') as f:
+            existing_content = f.read()
+        if existing_content.strip() != config_content.strip():
+            with open(input_conf_path, 'w') as f:
+                f.write(config_content)
+            logger.info(f"MPV 단축키 설정 파일 업데이트: {input_conf_path}")
+    
+    return input_conf_path
+
+def log_mpv_keyboard_shortcuts():
+    """MPV 키보드 단축키 정보를 로그에 기록"""
+    logger.info("=== MPV 키보드 단축키 가이드 ===")
+    logger.info("음량 조절: 9(작게 감소), 0(작게 증가), -(크게 감소), =(크게 증가), m 또는 /(음소거)")
+    logger.info("탐색: ← →(5초 이동), ↑ ↓(30초 이동), Page Up/Down(1분 이동)")
+    logger.info("재생 제어: 스페이스바/p(일시정지/재생)")
+    logger.info("화면: f(전체화면), ESC(전체화면 종료)")
+    logger.info("============================")
+
 def play_rtsp(location, ip):
-    """RTSP 스트림을 ffplay로 실행하는 함수"""
+    """RTSP 스트림을 재생하는 함수 (mpv 또는 ffplay 사용)"""
     rtsp_url = f'rtsp://{ip}:554/{location}'
     
-    # 기본 명령어
-    cmd = ['ffplay', '-rtsp_transport', 'tcp', '-i', rtsp_url, 
-            '-x', '640', '-y', '480', '-window_title', f'{location}']
+    # MPV 단축키 설정 파일 생성
+    create_mpv_input_conf()
     
-    # ffplay 실행 경로 확인
+    # 기본 명령어 (mpv 사용) - 초기 음량 50%로 설정
+    cmd = ['mpv', '--rtsp-transport=tcp', rtsp_url, 
+            '--geometry=640x480', '--force-window=yes', f'--title={location}',
+            '--volume=50', '--osd-level=1']
+    
+    # mpv 실행 경로 확인
     try:
         process = Popen(cmd)
         rtsp_processes.append(process)
-        logger.info(f"RTSP 스트림 시작: {rtsp_url}")
+        logger.info(f"MPV로 RTSP 스트림 시작: {rtsp_url}")
+        log_mpv_keyboard_shortcuts()
         return process.pid
     except FileNotFoundError:
-        # Mac Homebrew 설치 경로 시도
+        # Mac Homebrew mpv 설치 경로 시도
         try:
-            cmd[0] = '/opt/homebrew/bin/ffplay'  # Homebrew에서 설치한 경우 (Apple Silicon Mac)
+            cmd[0] = '/opt/homebrew/bin/mpv'  # Homebrew에서 설치한 경우 (Apple Silicon Mac)
             process = Popen(cmd)
             rtsp_processes.append(process)
-            logger.info(f"Homebrew 경로에서 RTSP 스트림 시작: {rtsp_url}")
+            logger.info(f"Homebrew 경로에서 MPV로 RTSP 스트림 시작: {rtsp_url}")
+            log_mpv_keyboard_shortcuts()
             return process.pid
         except Exception as e:
             # Intel Mac 경로 시도
             try:
-                cmd[0] = '/usr/local/bin/ffplay'  # Homebrew에서 설치한 경우 (Intel Mac)
+                cmd[0] = '/usr/local/bin/mpv'  # Homebrew에서 설치한 경우 (Intel Mac)
                 process = Popen(cmd)
                 rtsp_processes.append(process)
-                logger.info(f"Homebrew Intel 경로에서 RTSP 스트림 시작: {rtsp_url}")
+                logger.info(f"Homebrew Intel 경로에서 MPV로 RTSP 스트림 시작: {rtsp_url}")
+                log_mpv_keyboard_shortcuts()
                 return process.pid
             except Exception as e:
-                logger.error(f"RTSP 스트림 실행 오류: {e}")
-                return None
+                logger.error(f"MPV 실행 오류, ffplay로 대체 시도: {e}")
+                
+                # mpv 실패 시 ffplay로 대체 시도
+                cmd = ['ffplay', '-rtsp_transport', 'tcp', '-i', rtsp_url, 
+                      '-x', '640', '-y', '480', '-window_title', f'{location}', '-volume', '50']
+                
+                try:
+                    process = Popen(cmd)
+                    rtsp_processes.append(process)
+                    logger.info(f"ffplay로 RTSP 스트림 시작: {rtsp_url}")
+                    return process.pid
+                except FileNotFoundError:
+                    # Mac Homebrew 설치 경로 시도
+                    try:
+                        cmd[0] = '/opt/homebrew/bin/ffplay'  # Homebrew에서 설치한 경우 (Apple Silicon Mac)
+                        process = Popen(cmd)
+                        rtsp_processes.append(process)
+                        logger.info(f"Homebrew 경로에서 ffplay로 RTSP 스트림 시작: {rtsp_url}")
+                        return process.pid
+                    except Exception as e:
+                        # Intel Mac 경로 시도
+                        try:
+                            cmd[0] = '/usr/local/bin/ffplay'  # Homebrew에서 설치한 경우 (Intel Mac)
+                            process = Popen(cmd)
+                            rtsp_processes.append(process)
+                            logger.info(f"Homebrew Intel 경로에서 ffplay로 RTSP 스트림 시작: {rtsp_url}")
+                            return process.pid
+                        except Exception as e:
+                            logger.error(f"RTSP 스트림 실행 오류: {e}")
+                            return None
 
 def record_rtsp(location, ip):
     """RTSP 스트림을 녹화하는 함수 - FFmpeg 사용"""
@@ -456,41 +551,83 @@ def record_rtsp(location, ip):
         return None
 
 def play_ffplay_monitor(rtsp_url, location):
-    """녹화 중인 영상을 ffplay로 모니터링"""
-    # ffplay 명령어 설정
+    """녹화 중인 영상을 모니터링 (mpv 또는 ffplay 사용)"""
+    # MPV 단축키 설정 파일 생성
+    create_mpv_input_conf()
+    
+    # mpv 명령어 설정
     cmd = [
-        'ffplay',
-        '-rtsp_transport', 'tcp',
-        '-i', rtsp_url,
-        '-x', '640',
-        '-y', '480',
-        '-window_title', f'{location} (녹화 모니터링 중)'
+        'mpv',
+        '--rtsp-transport=tcp',
+        rtsp_url,
+        '--geometry=640x480',
+        '--force-window=yes',
+        f'--title={location} (녹화 모니터링 중)',
+        '--volume=50',
+        '--osd-level=1'
     ]
     
-    # ffplay 실행 경로 확인 (크로스 플랫폼)
+    # mpv 실행 경로 확인 (크로스 플랫폼)
     try:
         process = Popen(cmd)
         rtsp_processes.append(process)  # 모니터링용 프로세스도 rtsp 목록에 추가
-        logger.info(f"녹화 모니터링 ffplay 시작: {rtsp_url}")
+        logger.info(f"MPV로 녹화 모니터링 시작: {rtsp_url}")
+        log_mpv_keyboard_shortcuts()
         return process.pid
     except FileNotFoundError:
         # Mac Homebrew 설치 경로 시도
         try:
-            cmd[0] = '/opt/homebrew/bin/ffplay'  # Homebrew에서 설치한 경우 (Apple Silicon Mac)
+            cmd[0] = '/opt/homebrew/bin/mpv'  # Homebrew에서 설치한 경우 (Apple Silicon Mac)
             process = Popen(cmd)
             rtsp_processes.append(process)
-            logger.info(f"Homebrew 경로에서 녹화 모니터링 ffplay 시작: {rtsp_url}")
+            logger.info(f"Homebrew 경로에서 MPV로 녹화 모니터링 시작: {rtsp_url}")
+            log_mpv_keyboard_shortcuts()
             return process.pid
         except Exception as e:
             try:
-                cmd[0] = '/usr/local/bin/ffplay'  # Intel Mac에서 Homebrew로 설치한 경우
+                cmd[0] = '/usr/local/bin/mpv'  # Intel Mac에서 Homebrew로 설치한 경우
                 process = Popen(cmd)
                 rtsp_processes.append(process)
-                logger.info(f"Intel Mac Homebrew 경로에서 녹화 모니터링 ffplay 시작: {rtsp_url}")
+                logger.info(f"Intel Mac Homebrew 경로에서 MPV로 녹화 모니터링 시작: {rtsp_url}")
+                log_mpv_keyboard_shortcuts()
                 return process.pid
             except Exception as e:
-                logger.error(f"녹화 모니터링 ffplay 실행 오류: {e}")
-                return None
+                logger.error(f"MPV 실행 오류, ffplay로 대체 시도: {e}")
+                
+                # mpv 실패 시 ffplay 사용 시도
+                cmd = [
+                    'ffplay',
+                    '-rtsp_transport', 'tcp',
+                    '-i', rtsp_url,
+                    '-x', '640',
+                    '-y', '480',
+                    '-window_title', f'{location} (녹화 모니터링 중)',
+                    '-volume', '50'
+                ]
+                
+                try:
+                    process = Popen(cmd)
+                    rtsp_processes.append(process)
+                    logger.info(f"ffplay로 녹화 모니터링 시작: {rtsp_url}")
+                    return process.pid
+                except FileNotFoundError:
+                    # Mac Homebrew 설치 경로 시도
+                    try:
+                        cmd[0] = '/opt/homebrew/bin/ffplay'  # Homebrew에서 설치한 경우 (Apple Silicon Mac)
+                        process = Popen(cmd)
+                        rtsp_processes.append(process)
+                        logger.info(f"Homebrew 경로에서 ffplay로 녹화 모니터링 시작: {rtsp_url}")
+                        return process.pid
+                    except Exception as e:
+                        try:
+                            cmd[0] = '/usr/local/bin/ffplay'  # Intel Mac에서 Homebrew로 설치한 경우
+                            process = Popen(cmd)
+                            rtsp_processes.append(process)
+                            logger.info(f"Intel Mac Homebrew 경로에서 ffplay로 녹화 모니터링 시작: {rtsp_url}")
+                            return process.pid
+                        except Exception as e:
+                            logger.error(f"녹화 모니터링 실행 오류: {e}")
+                            return None
 
 def stop_recording():
     """녹화 중지 함수"""
@@ -511,7 +648,7 @@ def stop_recording():
     logger.info("녹화가 중지되었습니다.")
     return True
 
-def _background_rtmp_task(location, ip, stream_key):
+def _background_rtmp_task(location, ip, stream_key, bitrate=3000):
     """백그라운드에서 RTMP 스트리밍 처리"""
     global rtmp_processes, should_restart
     
@@ -524,10 +661,30 @@ def _background_rtmp_task(location, ip, stream_key):
     rtsp_url = f'rtsp://{ip}:554/{location}'
     rtmp_url = f'rtmp://a.rtmp.youtube.com/live2/{stream_key}'
     
+    # 비트레이트 값 검증 및 조정
+    if bitrate < 1000:
+        bitrate = 1000
+        logger.warning(f"비트레이트가 너무 낮아 1000Kbps로 조정했습니다.")
+    elif bitrate > 10000:
+        bitrate = 10000
+        logger.warning(f"비트레이트가 너무 높아 10000Kbps로 조정했습니다.")
+        
+    logger.info(f"스트리밍 비트레이트: {bitrate}Kbps")
+    
     # 기본 명령어
     cmd = [
         'ffmpeg', '-re', '-timeout', '10000000', '-rtsp_transport', 'tcp',
-        '-i', rtsp_url, '-c:v', 'copy', '-c:a', 'copy', '-f', 'flv',
+        '-i', rtsp_url, 
+        '-c:v', 'libx264', 
+        '-b:v', f'{bitrate}k',  # 비트레이트 설정
+        '-maxrate', f'{bitrate}k', 
+        '-bufsize', f'{bitrate*2}k',
+        '-preset', 'veryfast',  # 인코딩 속도/품질 설정
+        '-tune', 'zerolatency',
+        '-c:a', 'aac', 
+        '-b:a', '128k',  # 오디오 비트레이트
+        '-ar', '44100',
+        '-f', 'flv',
         rtmp_url, '-loglevel', 'debug', '-report'
     ]
     
@@ -723,13 +880,22 @@ def start_rtmp_stream(stream_req: StreamRequest, background_tasks: BackgroundTas
     if stream_req.ip not in RTSP_SERVERS:
         raise HTTPException(status_code=400, detail="유효하지 않은 서버 IP입니다.")
     
+    # 비트레이트 값 검증
+    bitrate = stream_req.bitrate
+    if bitrate < 1000:
+        bitrate = 1000
+        logger.warning(f"비트레이트가 너무 낮아 1000Kbps로 조정했습니다.")
+    elif bitrate > 10000:
+        bitrate = 10000
+        logger.warning(f"비트레이트가 너무 높아 10000Kbps로 조정했습니다.")
+    
     global should_restart
     should_restart = True
     
     # 백그라운드 작업 시작
-    background_tasks.add_task(_background_rtmp_task, location_code, stream_req.ip, stream_req.stream_key)
+    background_tasks.add_task(_background_rtmp_task, location_code, stream_req.ip, stream_req.stream_key, bitrate)
     
-    return {"status": "success", "message": "RTMP 스트리밍 시작됨"}
+    return {"status": "success", "message": f"RTMP 스트리밍 시작됨 (비트레이트: {bitrate}Kbps)"}
 
 @app.post("/rtmp/stop")
 def stop_rtmp_stream():

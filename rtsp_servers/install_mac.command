@@ -57,6 +57,14 @@ else
     echo "FFmpeg가 이미 설치되어 있습니다."
 fi
 
+# MPV 설치 확인 및 설치
+if ! command -v mpv &> /dev/null; then
+    echo "MPV 플레이어를 설치합니다..."
+    brew install mpv
+else
+    echo "MPV 플레이어가 이미 설치되어 있습니다."
+fi
+
 # Python 패키지 설치
 echo "Python 패키지를 설치합니다..."
 echo "pip3 경로: $(which pip3)"
