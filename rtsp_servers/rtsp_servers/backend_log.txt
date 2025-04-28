@@ -1,9 +1,0 @@
-INFO:__main__:백엔드 서버 시작 중...
-2025-04-16 14:56:15,677 - INFO - Started server process [511008]
-2025-04-16 14:56:15,678 - INFO - Waiting for application startup.
-2025-04-16 14:56:15,678 - INFO - Application startup complete.
-2025-04-16 14:56:15,678 - INFO - Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-2025-04-16 14:56:26,537 - INFO - 127.0.0.1:8975 - "GET / HTTP/1.1" 200
-2025-04-16 14:56:37,631 - INFO - 127.0.0.1:8998 - "GET /servers HTTP/1.1" 200
-2025-04-16 14:56:37,631 - INFO - 127.0.0.1:8999 - "GET /locations HTTP/1.1" 200
-2025-04-16 14:56:37,632 - INFO - 127.0.0.1:9000 - "GET /processes HTTP/1.1" 200
