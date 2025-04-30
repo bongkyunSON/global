@@ -177,27 +177,44 @@ def log_mpv_keyboard_shortcuts():
     logger.info("화면: f(전체화면), ESC(전체화면 종료)")
     logger.info("============================")
 
-def play_rtsp(location, ip):
+def play_rtsp(location, ip, bitrate=3000):
     """RTSP 스트림을 재생하는 함수 (mpv 또는 ffplay 사용)"""
     rtsp_url = f'rtsp://{ip}:554/{location}'
     
-    # MPV 단축키 설정 파일 생성
-    create_mpv_input_conf()
+    # 비트레이트 값 검증
+    if bitrate < 1000:
+        bitrate = 1000
+        logger.warning(f"비트레이트가 너무 낮아 1000Kbps로 조정했습니다.")
+    elif bitrate > 10000:
+        bitrate = 10000
+        logger.warning(f"비트레이트가 너무 높아 10000Kbps로 조정했습니다.")
     
-    # 기본 명령어 (mpv 사용) - 초기 음량 50%로 설정
-    cmd = ['mpv', '--rtsp-transport=tcp', rtsp_url, 
-            '--geometry=640x480', '--force-window=yes', f'--title={location}',
-            '--volume=50', '--osd-level=1']
+    logger.info(f"스트리밍 비트레이트: {bitrate}Kbps")
     
-    # mpv 실행 경로 확인
+    # mpv 사용 시도
     try:
+        # 사용자 정의 설정 파일 생성 (음량 조절 단축키 등)
+        create_mpv_input_conf()
+        log_mpv_keyboard_shortcuts()
+        
+        # 명시적으로 전체 경로 사용하고 추가 옵션 설정
+        cmd = ['/opt/homebrew/bin/mpv', 
+               '--rtsp-transport=tcp', 
+               rtsp_url,
+               '--title=RTSP: ' + location + ' (서버: ' + ip + ')',
+               '--volume=50',
+               '--force-window=yes',  # 강제로 창 표시
+               '--no-terminal',       # 터미널 출력 비활성화
+               '--geometry=50%',      # 화면 크기 50%로 설정
+               '--osd-level=1']       # 화면 표시 정보 활성화
+        
+        logger.info(f"실행 명령: {' '.join(cmd)}")
         process = Popen(cmd)
         rtsp_processes.append(process)
         logger.info(f"MPV로 RTSP 스트림 시작: {rtsp_url}")
-        log_mpv_keyboard_shortcuts()
         return process.pid
     except FileNotFoundError:
-        # Mac Homebrew mpv 설치 경로 시도
+        # Mac Homebrew 설치 경로 시도
         try:
             cmd[0] = '/opt/homebrew/bin/mpv'  # Homebrew에서 설치한 경우 (Apple Silicon Mac)
             process = Popen(cmd)
@@ -206,12 +223,11 @@ def play_rtsp(location, ip):
             log_mpv_keyboard_shortcuts()
             return process.pid
         except Exception as e:
-            # Intel Mac 경로 시도
             try:
-                cmd[0] = '/usr/local/bin/mpv'  # Homebrew에서 설치한 경우 (Intel Mac)
+                cmd[0] = '/usr/local/bin/mpv'  # Intel Mac에서 Homebrew로 설치한 경우
                 process = Popen(cmd)
                 rtsp_processes.append(process)
-                logger.info(f"Homebrew Intel 경로에서 MPV로 RTSP 스트림 시작: {rtsp_url}")
+                logger.info(f"Intel Mac Homebrew 경로에서 MPV로 RTSP 스트림 시작: {rtsp_url}")
                 log_mpv_keyboard_shortcuts()
                 return process.pid
             except Exception as e:
@@ -235,24 +251,33 @@ def play_rtsp(location, ip):
                         logger.info(f"Homebrew 경로에서 ffplay로 RTSP 스트림 시작: {rtsp_url}")
                         return process.pid
                     except Exception as e:
-                        # Intel Mac 경로 시도
                         try:
-                            cmd[0] = '/usr/local/bin/ffplay'  # Homebrew에서 설치한 경우 (Intel Mac)
+                            cmd[0] = '/usr/local/bin/ffplay'  # Intel Mac에서 Homebrew로 설치한 경우
                             process = Popen(cmd)
                             rtsp_processes.append(process)
-                            logger.info(f"Homebrew Intel 경로에서 ffplay로 RTSP 스트림 시작: {rtsp_url}")
+                            logger.info(f"Intel Mac Homebrew 경로에서 ffplay로 RTSP 스트림 시작: {rtsp_url}")
                             return process.pid
                         except Exception as e:
                             logger.error(f"RTSP 스트림 실행 오류: {e}")
                             return None
 
-def record_rtsp(location, ip):
+def record_rtsp(location, ip, bitrate=3000):
     """RTSP 스트림을 녹화하는 함수 - FFmpeg 사용"""
     global record_processes, is_recording
     
     if is_recording:
         logger.info("이미 녹화 중입니다. 먼저 녹화를 중지하세요.")
         return None
+        
+    # 비트레이트 값 검증
+    if bitrate < 1000:
+        bitrate = 1000
+        logger.warning(f"비트레이트가 너무 낮아 1000Kbps로 조정했습니다.")
+    elif bitrate > 10000:
+        bitrate = 10000
+        logger.warning(f"비트레이트가 너무 높아 10000Kbps로 조정했습니다.")
+    
+    logger.info(f"녹화 비트레이트: {bitrate}Kbps")
         
     # 녹화 파일 경로 설정 (크로스 플랫폼)
     desktop = os.path.join(os.path.expanduser("~"), "Desktop")
@@ -274,23 +299,32 @@ def record_rtsp(location, ip):
     
     rtsp_url = f'rtsp://{ip}:554/{location}'
     
-    # 먼저 스트림 복사 방식으로 MP4 저장 시도 (가장 안정적)
+    # 직접 트랜스코딩 방식으로 MP4 저장 (호환성과 안정성 향상)
     cmd = [
         'ffmpeg',
-        '-rtsp_transport', 'tcp',
-        '-i', rtsp_url,
-        # 비디오와 오디오 스트림을 그대로 복사
-        '-c:v', 'copy',
-        '-c:a', 'copy',
-        # AAC 비트스트림 필터 추가 (ADTS->ASC 변환)
-        '-bsf:a', 'aac_adtstoasc',
-        # MP4 컨테이너 설정
-        '-f', 'mp4',
-        '-movflags', '+faststart+frag_keyframe+empty_moov',  # 안정성 향상 옵션 추가
-        '-frag_duration', '1000000',  # 프래그먼트 길이 1초
-        '-avoid_negative_ts', 'make_zero',  # 타임스탬프 문제 해결
-        '-y',
-        mp4_output_file
+        '-y',                      # 기존 파일 덮어쓰기
+        '-rtsp_transport', 'tcp',  # TCP 사용
+        '-i', rtsp_url,            # 입력 RTSP 스트림
+        '-c:v', 'libx264',         # 비디오 코덱: H.264
+        '-preset', 'veryfast',     # 인코딩 속도 (빠른 인코딩)
+        '-tune', 'zerolatency',    # 지연 최소화 튜닝
+        '-profile:v', 'main',      # 프로파일 (호환성 개선)
+        '-level', '4.0',           # 레벨 (호환성 개선)
+        '-pix_fmt', 'yuv420p',     # 픽셀 포맷 (호환성 개선)
+        '-r', '30',                # 프레임 레이트 30fps로 고정
+        '-g', '60',                # GOP 크기 (키프레임 간격)
+        '-keyint_min', '60',       # 최소 키프레임 간격
+        '-sc_threshold', '0',      # 장면 변화 탐지 임계값 (0: 비활성화)
+        '-b:v', f'{bitrate}k',     # 비디오 비트레이트
+        '-maxrate', f'{bitrate*1.5}k', # 최대 비트레이트
+        '-bufsize', f'{bitrate*3}k',   # 버퍼 크기
+        '-c:a', 'aac',             # 오디오 코덱: AAC
+        '-b:a', '192k',            # 오디오 비트레이트
+        '-ar', '48000',            # 오디오 샘플 레이트
+        '-af', 'aresample=async=1000', # 오디오 타이밍 조정
+        '-threads', '4',           # 사용할 스레드 수
+        '-movflags', '+faststart',  # 웹 스트리밍 최적화
+        mp4_output_file            # 출력 파일
     ]
     
     logger.info(f"실행 명령: {' '.join(cmd)}")
@@ -303,7 +337,7 @@ def record_rtsp(location, ip):
                 process = Popen(cmd, stdout=log, stderr=log)
                 record_processes.append(process)
                 is_recording = True
-                logger.info(f"RTSP 스트림 녹화 시작 (MP4 스트림 복사): {rtsp_url}")
+                logger.info(f"RTSP 스트림 녹화 시작 (MP4 트랜스코딩): {rtsp_url}")
                 logger.info(f"녹화 파일: {mp4_output_file}")
                 logger.info(f"로그 파일: {log_file}")
                 
@@ -312,39 +346,31 @@ def record_rtsp(location, ip):
                 
                 return process.pid
             except Exception as e:
-                logger.info(f"MP4 스트림 복사 방식 실패: {e}")
+                logger.error(f"MP4 녹화 실패: {e}")
                 
-                # 2. 트랜스코딩 방식으로 MP4 저장 시도
-                mp4_transcode_file = os.path.join(recordings_dir, f"{location}_{timestamp}_transcode.mp4")
-                # 트랜스코딩 명령 재구성
+                # 2. 대체 방식으로 MKV 저장 시도
+                mkv_output_file = os.path.join(recordings_dir, f"{location}_{timestamp}.mkv")
                 cmd = [
                     'ffmpeg',
+                    '-y',
                     '-rtsp_transport', 'tcp',
                     '-i', rtsp_url,
-                    # 비디오는 H.264로 인코딩 (최대 호환성)
                     '-c:v', 'libx264',
-                    '-preset', 'ultrafast',     # 빠른 인코딩
-                    '-tune', 'zerolatency',     # 지연 최소화
-                    '-profile:v', 'baseline',   # 호환성 좋은 프로파일
-                    '-level', '4.1',            # 1080p를 지원하는 레벨로 수정
-                    '-pix_fmt', 'yuv420p',      # 가장 호환성 좋은 픽셀 포맷
-                    # 오디오는 AAC (MP4 표준)
+                    '-preset', 'veryfast',
+                    '-tune', 'zerolatency',
                     '-c:a', 'aac',
-                    '-b:a', '128k',             # 오디오 비트레이트
-                    '-ar', '44100',             # 오디오 샘플레이트
-                    # MP4 컨테이너 설정
-                    '-f', 'mp4',
-                    '-movflags', '+faststart',  # 스트리밍 최적화
-                    '-y',
-                    mp4_transcode_file
+                    '-b:a', '192k',
+                    '-ar', '48000',
+                    '-f', 'matroska',
+                    mkv_output_file
                 ]
                 
                 try:
                     process = Popen(cmd, stdout=log, stderr=log)
                     record_processes.append(process)
                     is_recording = True
-                    logger.info(f"RTSP 스트림 녹화 시작 (MP4 트랜스코딩): {rtsp_url}")
-                    logger.info(f"녹화 파일: {mp4_transcode_file}")
+                    logger.info(f"MKV 형식으로 RTSP 스트림 녹화 시작: {rtsp_url}")
+                    logger.info(f"녹화 파일: {mkv_output_file}")
                     logger.info(f"로그 파일: {log_file}")
                     
                     # 영상 확인용 ffplay 실행
@@ -352,58 +378,8 @@ def record_rtsp(location, ip):
                     
                     return process.pid
                 except Exception as e:
-                    logger.error(f"MP4 트랜스코딩 방식도 실패: {e}")
-                    
-                    # 3. TS 컨테이너로 시도
-                    ts_output_file = os.path.join(recordings_dir, f"{location}_{timestamp}.ts")
-                    # 복사 모드로 명령 재구성
-                    cmd = [
-                        'ffmpeg',
-                        '-rtsp_transport', 'tcp',
-                        '-i', rtsp_url,
-                        '-c:v', 'copy',
-                        '-c:a', 'copy',
-                        '-f', 'mpegts',
-                        '-y',
-                        ts_output_file
-                    ]
-                    
-                    try:
-                        process = Popen(cmd, stdout=log, stderr=log)
-                        record_processes.append(process)
-                        is_recording = True
-                        logger.info(f"TS 형식으로 RTSP 스트림 녹화 시작: {rtsp_url}")
-                        logger.info(f"녹화 파일: {ts_output_file}")
-                        logger.info(f"로그 파일: {log_file}")
-                        
-                        # 영상 확인용 ffplay 실행
-                        play_ffplay_monitor(rtsp_url, location)
-                        
-                        return process.pid
-                    except Exception as e:
-                        logger.error(f"TS 스트림 복사 방식도 실패: {e}")
-                        
-                        # 4. 마지막으로 MKV로 시도
-                        mkv_output_file = os.path.join(recordings_dir, f"{location}_{timestamp}.mkv")
-                        cmd[-3] = '-f'
-                        cmd[-2] = 'matroska'
-                        cmd[-1] = mkv_output_file
-                        
-                        try:
-                            process = Popen(cmd, stdout=log, stderr=log)
-                            record_processes.append(process)
-                            is_recording = True
-                            logger.info(f"MKV 형식으로 RTSP 스트림 녹화 시작: {rtsp_url}")
-                            logger.info(f"녹화 파일: {mkv_output_file}")
-                            logger.info(f"로그 파일: {log_file}")
-                            
-                            # 영상 확인용 ffplay 실행
-                            play_ffplay_monitor(rtsp_url, location)
-                            
-                            return process.pid
-                        except Exception as e:
-                            logger.error(f"모든 스트림 복사 방식 실패: {e}")
-                            return None
+                    logger.error(f"MKV 녹화 방식도 실패: {e}")
+                    return None
     except FileNotFoundError:
         # Mac Homebrew 설치 경로 시도
         try:
@@ -422,28 +398,31 @@ def record_rtsp(location, ip):
                     
                     return process.pid
                 except Exception as e:
-                    logger.info(f"Mac에서 MP4 인코딩 방식 실패: {e}")
+                    logger.error(f"Mac에서 MP4 녹화 실패: {e}")
                     
-                    # 파일 복사(copy) 모드로 TS 컨테이너 시도
-                    ts_output_file = os.path.join(recordings_dir, f"{location}_{timestamp}.ts")
-                    # 복사 모드로 명령 재구성
+                    # 대체 방식으로 MKV 저장 시도
+                    mkv_output_file = os.path.join(recordings_dir, f"{location}_{timestamp}.mkv")
                     cmd = [
                         '/opt/homebrew/bin/ffmpeg',
+                        '-y',
                         '-rtsp_transport', 'tcp',
                         '-i', rtsp_url,
-                        '-c:v', 'copy',
-                        '-c:a', 'copy',
-                        '-f', 'mpegts',
-                        '-y',
-                        ts_output_file
+                        '-c:v', 'libx264',
+                        '-preset', 'veryfast',
+                        '-tune', 'zerolatency',
+                        '-c:a', 'aac',
+                        '-b:a', '192k',
+                        '-ar', '48000',
+                        '-f', 'matroska',
+                        mkv_output_file
                     ]
                     
                     try:
                         process = Popen(cmd, stdout=log, stderr=log)
                         record_processes.append(process)
                         is_recording = True
-                        logger.info(f"Mac에서 TS 형식으로 RTSP 스트림 녹화 시작: {rtsp_url}")
-                        logger.info(f"녹화 파일: {ts_output_file}")
+                        logger.info(f"Mac에서 MKV 형식으로 RTSP 스트림 녹화 시작: {rtsp_url}")
+                        logger.info(f"녹화 파일: {mkv_output_file}")
                         logger.info(f"로그 파일: {log_file}")
                         
                         # 영상 확인용 ffplay 실행
@@ -451,29 +430,8 @@ def record_rtsp(location, ip):
                         
                         return process.pid
                     except Exception as e:
-                        logger.error(f"Mac에서 TS 스트림 복사 방식도 실패: {e}")
-                        
-                        # 마지막으로 MKV로 시도
-                        mkv_output_file = os.path.join(recordings_dir, f"{location}_{timestamp}.mkv")
-                        cmd[-3] = '-f'
-                        cmd[-2] = 'matroska'
-                        cmd[-1] = mkv_output_file
-                        
-                        try:
-                            process = Popen(cmd, stdout=log, stderr=log)
-                            record_processes.append(process)
-                            is_recording = True
-                            logger.info(f"Mac에서 MKV 형식으로 RTSP 스트림 녹화 시작: {rtsp_url}")
-                            logger.info(f"녹화 파일: {mkv_output_file}")
-                            logger.info(f"로그 파일: {log_file}")
-                            
-                            # 영상 확인용 ffplay 실행
-                            play_ffplay_monitor(rtsp_url, location)
-                            
-                            return process.pid
-                        except Exception as e:
-                            logger.error(f"Mac에서 모든 스트림 복사 방식 실패: {e}")
-                            return None
+                        logger.error(f"Mac에서 MKV 녹화 방식도 실패: {e}")
+                        return None
         except Exception as e:
             try:
                 cmd[0] = '/usr/local/bin/ffmpeg'  # Intel Mac에서 Homebrew로 설치한 경우
@@ -491,28 +449,31 @@ def record_rtsp(location, ip):
                         
                         return process.pid
                     except Exception as e:
-                        logger.info(f"Intel Mac에서 MP4 인코딩 방식 실패: {e}")
+                        logger.error(f"Intel Mac에서 MP4 녹화 실패: {e}")
                         
-                        # 파일 복사(copy) 모드로 TS 컨테이너 시도
-                        ts_output_file = os.path.join(recordings_dir, f"{location}_{timestamp}.ts")
-                        # 복사 모드로 명령 재구성
+                        # 대체 방식으로 MKV 저장 시도
+                        mkv_output_file = os.path.join(recordings_dir, f"{location}_{timestamp}.mkv")
                         cmd = [
                             '/usr/local/bin/ffmpeg',
+                            '-y',
                             '-rtsp_transport', 'tcp',
                             '-i', rtsp_url,
-                            '-c:v', 'copy',
-                            '-c:a', 'copy',
-                            '-f', 'mpegts',
-                            '-y',
-                            ts_output_file
+                            '-c:v', 'libx264',
+                            '-preset', 'veryfast',
+                            '-tune', 'zerolatency',
+                            '-c:a', 'aac',
+                            '-b:a', '192k',
+                            '-ar', '48000',
+                            '-f', 'matroska',
+                            mkv_output_file
                         ]
                         
                         try:
                             process = Popen(cmd, stdout=log, stderr=log)
                             record_processes.append(process)
                             is_recording = True
-                            logger.info(f"Intel Mac에서 TS 형식으로 RTSP 스트림 녹화 시작: {rtsp_url}")
-                            logger.info(f"녹화 파일: {ts_output_file}")
+                            logger.info(f"Intel Mac에서 MKV 형식으로 RTSP 스트림 녹화 시작: {rtsp_url}")
+                            logger.info(f"녹화 파일: {mkv_output_file}")
                             logger.info(f"로그 파일: {log_file}")
                             
                             # 영상 확인용 ffplay 실행
@@ -520,52 +481,31 @@ def record_rtsp(location, ip):
                             
                             return process.pid
                         except Exception as e:
-                            logger.error(f"Intel Mac에서 TS 스트림 복사 방식도 실패: {e}")
-                            
-                            # 마지막으로 MKV로 시도
-                            mkv_output_file = os.path.join(recordings_dir, f"{location}_{timestamp}.mkv")
-                            cmd[-3] = '-f'
-                            cmd[-2] = 'matroska'
-                            cmd[-1] = mkv_output_file
-                            
-                            try:
-                                process = Popen(cmd, stdout=log, stderr=log)
-                                record_processes.append(process)
-                                is_recording = True
-                                logger.info(f"Intel Mac에서 MKV 형식으로 RTSP 스트림 녹화 시작: {rtsp_url}")
-                                logger.info(f"녹화 파일: {mkv_output_file}")
-                                logger.info(f"로그 파일: {log_file}")
-                                
-                                # 영상 확인용 ffplay 실행
-                                play_ffplay_monitor(rtsp_url, location)
-                                
-                                return process.pid
-                            except Exception as e:
-                                logger.error(f"Intel Mac에서 모든 스트림 복사 방식 실패: {e}")
-                                return None
+                            logger.error(f"Intel Mac에서 모든 녹화 방식 실패: {e}")
+                            return None
             except Exception as e:
                 logger.error(f"RTSP 스트림 녹화 오류: {e}")
                 return None
-    except Exception as e:
-        logger.error(f"RTSP 스트림 녹화 오류: {e}")
-        return None
 
 def play_ffplay_monitor(rtsp_url, location):
     """녹화 중인 영상을 모니터링 (mpv 또는 ffplay 사용)"""
     # MPV 단축키 설정 파일 생성
     create_mpv_input_conf()
     
-    # mpv 명령어 설정
+    # mpv 명령어 설정 - 전체 경로 사용
     cmd = [
-        'mpv',
+        '/opt/homebrew/bin/mpv',
         '--rtsp-transport=tcp',
         rtsp_url,
         '--geometry=640x480',
         '--force-window=yes',
         f'--title={location} (녹화 모니터링 중)',
         '--volume=50',
+        '--no-terminal',       # 터미널 출력 비활성화
         '--osd-level=1'
     ]
+    
+    logger.info(f"모니터링 실행 명령: {' '.join(cmd)}")
     
     # mpv 실행 경로 확인 (크로스 플랫폼)
     try:
@@ -852,9 +792,18 @@ def start_rtsp_stream(stream_req: StreamRequest):
     if stream_req.ip not in RTSP_SERVERS:
         raise HTTPException(status_code=400, detail="유효하지 않은 서버 IP입니다.")
     
-    pid = play_rtsp(location_code, stream_req.ip)
+    # 비트레이트 값 검증
+    bitrate = stream_req.bitrate
+    if bitrate < 1000:
+        bitrate = 1000
+        logger.warning(f"비트레이트가 너무 낮아 1000Kbps로 조정했습니다.")
+    elif bitrate > 10000:
+        bitrate = 10000
+        logger.warning(f"비트레이트가 너무 높아 10000Kbps로 조정했습니다.")
+    
+    pid = play_rtsp(location_code, stream_req.ip, bitrate)
     if pid:
-        return {"status": "success", "pid": pid}
+        return {"status": "success", "message": f"RTSP 스트리밍 시작됨 (비트레이트: {bitrate}Kbps)", "pid": pid}
     else:
         raise HTTPException(status_code=500, detail="RTSP 스트림 시작 실패")
 
@@ -936,11 +885,20 @@ def start_rtsp_recording(stream_req: StreamRequest):
             location = code
             break
     
+    # 비트레이트 값 검증
+    bitrate = stream_req.bitrate
+    if bitrate < 1000:
+        bitrate = 1000
+        logger.warning(f"비트레이트가 너무 낮아 1000Kbps로 조정했습니다.")
+    elif bitrate > 10000:
+        bitrate = 10000
+        logger.warning(f"비트레이트가 너무 높아 10000Kbps로 조정했습니다.")
+    
     # RTSP 스트림 녹화 시작
-    pid = record_rtsp(location, ip)
+    pid = record_rtsp(location, ip, bitrate)
     
     if pid:
-        return {"status": "success", "message": f"RTSP 스트림 녹화 시작: {location}", "pid": pid}
+        return {"status": "success", "message": f"RTSP 스트림 녹화 시작: {location} (비트레이트: {bitrate}Kbps)", "pid": pid}
     else:
         raise HTTPException(status_code=500, detail="RTSP 스트림 녹화 시작 실패")
 
