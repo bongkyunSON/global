@@ -78,8 +78,12 @@ source venv/bin/activate
 # pip 업그레이드
 pip install --upgrade pip
 
+# setuptools 설치
+pip install setuptools wheel
+
 # 필요한 패키지 설치
 pip install fastapi uvicorn requests psutil pydantic typing
+pip install opencv-python paddlepaddle paddleocr python-multipart
 
 # 가상 환경 정보를 저장
 echo "#!/bin/bash

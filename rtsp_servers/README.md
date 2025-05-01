@@ -65,4 +65,21 @@ docker run -d --name rtsp-server -p 8000:8000 -p 3000:3000 rtsp-server
 4. `docker-start-mac.command` (Mac 사용자용)
 5. 이 README.md 파일
 
-또는 Docker Hub에 이미지를 업로드한 후 스크립트를 수정하여 `docker build` 대신 `docker pull` 명령을 사용하도록 할 수 있습니다. 
+또는 Docker Hub에 이미지를 업로드한 후 스크립트를 수정하여 `docker build` 대신 `docker pull` 명령을 사용하도록 할 수 있습니다.
+
+## 새로운 기능: 이미지 크기 조정 및 OCR
+
+이 프로젝트에는 이미지 크기 조정 및 OCR(광학 문자 인식) 기능이 추가되었습니다.
+
+### 주요 기능
+- 이미지 업로드 및 크기 조정
+- 이미지에서 텍스트 추출 (OCR)
+- 텍스트 복사 및 다운로드 기능
+
+### 필수 라이브러리
+이 기능을 사용하기 위해서는 다음 라이브러리가 필요합니다:
+- OpenCV (이미지 처리)
+- PaddleOCR (텍스트 인식)
+- Python-Multipart (파일 업로드 처리)
+
+모든 필수 라이브러리는 `install_mac.command`를 실행하여 설치할 수 있습니다. 
