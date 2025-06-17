@@ -30,7 +30,7 @@
 1. **저장소 클론**
    ```bash
    git clone <repository-url>
-   cd toss_rtsp
+   cd rtsp_toss_version
    ```
 
 2. **백엔드 의존성 설치**
@@ -90,7 +90,7 @@
 ## 🏗️ 프로젝트 구조
 
 ```
-toss_rtsp/
+rtsp_toss_version/
 ├── backend.py              # FastAPI 백엔드 서버
 ├── requirements.txt         # Python 의존성
 ├── version.json            # 버전 관리
