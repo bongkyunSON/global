@@ -1,4 +1,11 @@
-/__pycache__/
+# Python
+__pycache__/
+*.pyc
+*.pyo
+temp_images/
+
+
+# macOS
 .cursorignore
 venv/
 *.pdf
@@ -6,3 +13,5 @@ venv/
 *.jpg
 *.png
 .DS_Store
+*.pdf
+analysis_history/*

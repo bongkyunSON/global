@@ -8,6 +8,46 @@ import base64
 import requests
 from typing import Optional
 
+# poster_chain 기능을 위한 추가 import
+from langchain_upstage import ChatUpstage
+from langchain_core.output_parsers import JsonOutputParser
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.prompts import PromptTemplate
+
+# 포스터 정보 추출을 위한 프롬프트 템플릿
+POSTER_ANALYSIS_PROMPT = PromptTemplate.from_template(
+    """
+    ### 역할 ###
+    너는 해당 포스터의 내용을 보고 정보를 추출해야합니다.
+
+    **분야** 같은 경우는 해당 리스트에서 최대 5개를 추출하고 꼭 굳이 5개가 아니여도돼
+    **좌장, 패널** 같은 경우는 출력할때 이름 뿐만 아니라 소속 기관도 함께 출력해야해
+
+    ### 입력 ###
+    {poster_context}
+
+    
+    ### 포스터 정보 ###
+    1. 세미나 일시: 
+    2. 제목:
+    3. 주최 장소:  
+    4. 주최(국회의원):
+    5. 주최(그외):
+    6. 주관 및 후원:
+    7. 분야(최대 5개선택):
+     [경제, 인권, 정치, 사법, 보훈, 금융, 재정, 교육, 외교, 통일, 국방, 선거, 체육, 산업, 보건, 복지, 환경, 노동, 국토, 교통, 기타, 지자체, 공정거래, 과학기술, 공공안전, 문화관광, 해양수산, 여성가족, 정보방송통신, 농림축산식품, 중소거업 벤처]
+
+    8. 키워드:
+    9. 좌장:
+    10. 패널:
+
+
+    ### 출력 형식 ###
+    Instructions: {instructions}
+
+    """
+)
+
 
 def perform_ocr(input_path, api_key=None):
     """이미지에서 OCR 수행하여 텍스트 추출 (Upstage API 사용)"""
@@ -246,6 +286,94 @@ def process_image_for_web(
 
     except Exception as e:
         print(f"이미지 처리 중 오류 발생: {str(e)}")
+        result["error"] = str(e)
+        return result
+
+
+def poster_analysis_for_web(file_path: str, api_key: str):
+    """포스터 이미지에서 구조화된 정보를 추출하는 함수"""
+    result = {
+        "success": False,
+        "poster_info": {},
+        "original_filename": os.path.basename(file_path),
+    }
+
+    try:
+        # 먼저 OCR로 텍스트 추출
+        ocr_text = perform_ocr(file_path, api_key)
+        
+        if not ocr_text or "오류" in ocr_text or "찾을 수 없습니다" in ocr_text:
+            result["error"] = "OCR 처리에 실패했습니다."
+            return result
+
+        # LangChain을 사용하여 포스터 정보 분석
+        json_parser = JsonOutputParser()
+        llm = ChatUpstage(api_key=api_key, model="solar-pro2-preview")
+        template = POSTER_ANALYSIS_PROMPT.partial(instructions=json_parser.get_format_instructions())
+
+        chain = (
+            {
+                "poster_context": RunnablePassthrough(),
+            }
+            | template
+            | llm
+            | json_parser
+        )
+
+        poster_info = chain.invoke({"poster_context": ocr_text})
+        
+        result["poster_info"] = poster_info
+        result["success"] = True
+        return result
+
+    except Exception as e:
+        print(f"포스터 분석 중 오류 발생: {str(e)}")
+        result["error"] = str(e)
+        return result
+
+
+def extract_poster_info_with_ocr(file_path: str, api_key: str):
+    """OCR과 포스터 정보 추출을 함께 수행하는 함수"""
+    result = {
+        "success": False,
+        "ocr_text": "",
+        "poster_info": {},
+        "original_filename": os.path.basename(file_path),
+    }
+
+    try:
+        # OCR 처리
+        ocr_text = perform_ocr(file_path, api_key)
+        
+        if not ocr_text or "오류" in ocr_text or "찾을 수 없습니다" in ocr_text:
+            result["ocr_text"] = ocr_text or "OCR 처리 실패"
+            result["error"] = "OCR 처리에 실패했습니다."
+            return result
+        
+        result["ocr_text"] = ocr_text
+
+        # 포스터 정보 분석
+        json_parser = JsonOutputParser()
+        llm = ChatUpstage(api_key=api_key, model="solar-pro2-preview")
+        template = POSTER_ANALYSIS_PROMPT.partial(instructions=json_parser.get_format_instructions())
+
+        chain = (
+            {
+                "poster_context": RunnablePassthrough(),
+            }
+            | template
+            | llm
+            | json_parser
+        )
+
+        poster_info = chain.invoke({"poster_context": ocr_text})
+        
+        result["poster_info"] = poster_info
+        result["success"] = True
+        return result
+
+    except Exception as e:
+        print(f"포스터 정보 추출 중 오류 발생: {str(e)}")
         result["error"] = str(e)
         return result
 

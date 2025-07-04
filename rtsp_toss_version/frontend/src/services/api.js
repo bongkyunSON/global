@@ -142,6 +142,26 @@ export const apiService = {
     });
     return response.data;
   },
+
+  // 포스터 분석 (구조화된 정보 추출)
+  async analyzePoster(formData) {
+    const response = await api.post('/poster/analyze', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // 포스터 OCR + 분석 (텍스트와 구조화된 정보 함께 추출)
+  async extractPosterWithOcr(formData) {
+    const response = await api.post('/poster/extract-with-ocr', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
 };
 
 export default apiService; 

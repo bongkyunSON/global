@@ -107,6 +107,16 @@ export const useImageOcr = () => {
   return useApi(apiService.ocrImageOnly);
 };
 
+// 포스터 분석만
+export const usePosterAnalyze = () => {
+  return useApi(apiService.analyzePoster);
+};
+
+// 포스터 OCR + 분석
+export const usePosterExtractWithOcr = () => {
+  return useApi(apiService.extractPosterWithOcr);
+};
+
 // 서버 정보 훅들
 export const useServers = () => {
   return useApiLoad(apiService.getServers);

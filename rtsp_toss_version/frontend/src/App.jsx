@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Video, Radio, Camera, RotateCcw, Image, Activity, Settings } from 'lucide-react';
+import { Video, Radio, Camera, RotateCcw, Image, Activity, Settings, History } from 'lucide-react';
 import RtspStreamCard from './components/RtspStreamCard';
 import RtmpStreamCard from './components/RtmpStreamCard';
 import CameraControlCard from './components/CameraControlCard';
 import DeviceResetCard from './components/DeviceResetCard';
-import ImageProcessCard from './components/ImageProcessCard';
+import ImageAnalysisCard from './components/ImageAnalysisCard';
 import ProcessMonitorCard from './components/ProcessMonitorCard';
+import AnalysisHistoryCard from './components/AnalysisHistoryCard';
 import Header from './components/Header';
 import './styles/App.css';
 
@@ -14,11 +15,34 @@ function App() {
   const [version, setVersion] = useState('1.0.0');
 
   useEffect(() => {
-    // 버전 정보 로드
-    fetch('/version.json')
-      .then(response => response.json())
-      .then(data => setVersion(data.version))
-      .catch(error => console.log('Version loading failed:', error));
+    // 버전 정보 로드 (캐시 버스팅 및 캐시 무효화)
+    const timestamp = Date.now();
+    console.log('버전 정보 로딩 시작...', timestamp);
+    
+    fetch(`/version.json?t=${timestamp}`, {
+      method: 'GET',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    })
+      .then(response => {
+        console.log('버전 응답 상태:', response.status, response.statusText);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('버전 데이터 로드 성공:', data);
+        setVersion(data.version || '2.0.0');
+      })
+      .catch(error => {
+        console.error('버전 로딩 실패:', error);
+        // fallback으로 2.0.0 설정
+        setVersion('2.0.0');
+      });
   }, []);
 
   const tabs = [
@@ -26,7 +50,8 @@ function App() {
     { id: 'rtmp', label: 'RTMP 송출', icon: Radio },
     { id: 'camera', label: '카메라 제어', icon: Camera },
     { id: 'reset', label: '장치 리셋', icon: RotateCcw },
-    { id: 'image', label: '이미지 처리', icon: Image },
+    { id: 'analysis', label: 'AI 포스터 분석', icon: Image },
+    { id: 'history', label: '분석 히스토리', icon: History },
     { id: 'monitor', label: '프로세스 모니터', icon: Activity },
   ];
 
@@ -40,10 +65,12 @@ function App() {
         return <CameraControlCard />;
       case 'reset':
         return <DeviceResetCard />;
-      case 'image':
-        return <ImageProcessCard />;
+      case 'analysis':
+        return <ImageAnalysisCard />;
       case 'monitor':
         return <ProcessMonitorCard />;
+      case 'history':
+        return <AnalysisHistoryCard />;
       default:
         return <RtspStreamCard />;
     }
