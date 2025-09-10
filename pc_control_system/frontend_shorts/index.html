@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shorts Template</title>
+    <link rel="stylesheet" href="/static/themes.css">
+    <link rel="stylesheet" href="/shorts-static/style.css">
+    <!-- 깜박거림 방지용 인라인 스타일 -->
+    <style>
+        body { 
+            visibility: visible !important; 
+            opacity: 1 !important;
+            transition: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Shorts Template</h1>
+            <div class="current-info-container">
+                <span id="currentInfo" class="current-info">1 / 10</span>
+            </div>
+        </header>
+
+        <main class="gallery-container">
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>갤러리를 불러오는 중...</p>
+            </div>
+
+            <div id="galleryContent" class="gallery-content" style="display: none;">
+                <div class="gallery-header">
+                    <h2 id="galleryTitle" class="gallery-title"></h2>
+                    <div id="galleryDescription" class="gallery-description"></div>
+                    
+                    <div class="template-actions">
+                        <button id="downloadBtn" class="download-btn">
+                            <svg class="download-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                            </svg>
+                            템플릿 다운로드
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="gallery-main">
+                    <!-- 좌측 네비게이션 버튼 -->
+                    <button id="prevBtn" class="nav-arrow nav-arrow-left" aria-label="이전">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                        </svg>
+                    </button>
+                    
+                    <div class="images-grid" id="imagesGrid">
+                        <!-- 이미지들이 동적으로 삽입됩니다 -->
+                    </div>
+                    
+                    <!-- 우측 네비게이션 버튼 -->
+                    <button id="nextBtn" class="nav-arrow nav-arrow-right" aria-label="다음">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- 모바일용 네비게이션 -->
+                <div class="nav-controls-mobile">
+                    <button id="prevBtnMobile" class="nav-arrow nav-arrow-mobile" aria-label="이전">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                        </svg>
+                    </button>
+                    <button id="nextBtnMobile" class="nav-arrow nav-arrow-mobile" aria-label="다음">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div id="errorMessage" class="error-message" style="display: none;">
+                <h2>오류가 발생했습니다</h2>
+                <p id="errorText"></p>
+                <button id="retryBtn" class="retry-btn">다시 시도</button>
+            </div>
+        </main>
+
+
+    </div>
+
+    <!-- 이미지 모달 -->
+    <div id="imageModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="modal-close" id="modalClose">&times;</span>
+            <img id="modalImage" class="modal-image" alt="확대된 이미지">
+            <div class="modal-nav">
+                <button id="modalPrev" class="modal-nav-btn modal-prev">‹</button>
+                <button id="modalNext" class="modal-nav-btn modal-next">›</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/theme.js"></script>
+    <script src="/shorts-static/script.js"></script>
+    <script>
+        // 페이지 로드 시 테마 적용
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.ThemeSystem) {
+                window.ThemeSystem.applyCurrentTheme();
+            }
+        });
+    </script>
+</body>
+</html>

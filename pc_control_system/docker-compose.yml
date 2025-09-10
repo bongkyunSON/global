@@ -1,42 +1,25 @@
+version: '3.8'
+
 services:
-  backend:
-    build: ./backend
-    container_name: pc-control-backend
+  pc-control-backend:
+    image: bongkyunson/pc-control-system:latest
+    build: . # 이 줄을 추가하여 docker-compose up --build 명령으로 이미지를 빌드할 수 있게 합니다.
     ports:
       - "8000:8000"
+    volumes:
+      - ./.env:/app/.env:ro
+      - ./config.json:/app/config.json
+      - ./image:/app/image # 로컬 image 폴더를 컨테이너의 /app/image에 마운트합니다. :ro 제거
+      - ./backend/login_history.json:/app/login_history.json # backend 폴더 경로 추가
+      - ./backend/base_login_history.json:/app/base_login_history.json # 베이스 데이터 파일 추가
+      - ./backend/call_history.json:/app/call_history.json # backend 폴더 경로 추가
+      - ./backend/download_history.json:/app/download_history.json # backend 폴더 경로 추가
+      - ./backend/feedback_history.json:/app/feedback_history.json # backend 폴더 경로 추가
     environment:
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
-    networks:
-      - pc-control-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  frontend:
-    build: ./frontend
-    container_name: pc-control-frontend
-    ports:
-      - "3000:80"
-    depends_on:
-      - backend
-    restart: unless-stopped
-    networks:
-      - pc-control-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-networks:
-  pc-control-network:
-    driver: bridge
-
-volumes:
-  pc-control-data:
-    driver: local 
+      retries: 3 

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>피드백 관리 시스템 - 온라인콘텐츠편집실</title>
+    <link rel="stylesheet" href="/static/themes.css">
+    <style>
+        @font-face {
+            font-family: 'Cafe24Ssurround';
+            src: url('/assets/폰트/Cafe24Ssurround-v2.0/webfont/Cafe24Ssurround-v2.0.woff2') format('woff2'),
+                 url('/assets/폰트/Cafe24Ssurround-v2.0/webfont/Cafe24Ssurround-v2.0.woff') format('woff'),
+                 url('/assets/폰트/Cafe24Ssurround-v2.0/Cafe24Ssurround-v2.0.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: '중나좋체';
+            src: url('/assets/폰트/중나좋체 맥 전용/중나좋체 OTF Medium.otf') format('opentype');
+            font-weight: 500;
+            font-style: normal;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            background: var(--background-gradient);
+            font-family: '중나좋체', sans-serif;
+            color: var(--text-color);
+        }
+
+        .back-btn {
+            font-family: '중나좋체', sans-serif;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            box-shadow: 0 4px 15px var(--shadow-color);
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--shadow-hover);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 80px 20px 50px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .title {
+            font-family: 'Cafe24Ssurround', sans-serif;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-family: '중나좋체', sans-serif;
+            color: var(--text-color);
+            font-size: 1.2rem;
+            opacity: 0.8;
+            margin-bottom: 30px;
+        }
+
+        .period-selector {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .period-btn {
+            font-family: '중나좋체', sans-serif;
+            padding: 12px 24px;
+            border: 2px solid var(--border-color);
+            border-radius: 25px;
+            background: var(--card-background);
+            color: var(--text-color);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .period-btn:hover {
+            background: var(--hover-background);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px var(--shadow-color);
+        }
+
+        .period-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 8px var(--shadow-color);
+        }
+
+        .feedback-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .feedback-card {
+            background: var(--card-background);
+            border-radius: 20px;
+            padding: 25px;
+            border: 2px solid var(--border-color);
+            box-shadow: 0 8px 20px var(--shadow-color);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .feedback-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px var(--shadow-hover);
+        }
+
+        .feedback-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .feedback-user {
+            font-family: '중나좋체', sans-serif;
+            font-weight: bold;
+            color: var(--primary-color);
+            font-size: 1.1rem;
+        }
+
+        .feedback-time {
+            font-family: '중나좋체', sans-serif;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .feedback-type {
+            display: inline-block;
+            background: var(--primary-color);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .feedback-content {
+            font-family: '중나좋체', sans-serif;
+            color: var(--text-color);
+            line-height: 1.6;
+            margin-top: 10px;
+            background: var(--accent-background);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+            font-family: '중나좋체', sans-serif;
+            font-size: 1.1rem;
+        }
+
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--loading-background);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(10px);
+        }
+
+        .loading .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--spinner-track);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .summary-card {
+            background: var(--summary-background);
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 20px var(--shadow-color);
+            border: 2px solid var(--border-color);
+        }
+
+        .summary-number {
+            font-family: 'Cafe24Ssurround', sans-serif;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .summary-text {
+            font-family: '중나좋체', sans-serif;
+            color: var(--text-color);
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 60px 15px 30px;
+            }
+            
+            .title {
+                font-size: 2rem;
+            }
+            
+            .period-selector {
+                flex-direction: column;
+                align-items: center;
+                gap: 10px;
+            }
+            
+            .feedback-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="back-btn" onclick="goBack()">← 통계로 돌아가기</button>
+    
+    <!-- 드롭다운 메뉴 -->
+    <div class="dropdown-menu" style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
+        <button class="dropdown-btn" onclick="toggleDropdown()" style="font-family: '중나좋체', sans-serif; padding: 12px 20px; background: var(--feedback-button-color); color: white; border: none; border-radius: 25px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 8px var(--shadow-color); display: flex; align-items: center; gap: 8px;">
+            ⚙️ 메뉴
+            <span class="dropdown-arrow" style="transition: transform 0.3s ease; font-size: 0.8rem;">▼</span>
+        </button>
+        <div class="dropdown-content" id="dropdownContent" style="position: absolute; top: 100%; right: 0; background: white; min-width: 200px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); border: 2px solid var(--border-color); margin-top: 8px; opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.3s ease;">
+            <a href="/graph" style="font-family: '중나좋체', sans-serif; display: block; padding: 15px 20px; color: var(--text-color); text-decoration: none; font-size: 1rem; font-weight: 500; transition: all 0.3s ease; border-bottom: 1px solid rgba(0, 0, 0, 0.1); border-radius: 13px 13px 0 0;">📊 사용자 통계</a>
+            <a href="/download" style="font-family: '중나좋체', sans-serif; display: block; padding: 15px 20px; color: var(--text-color); text-decoration: none; font-size: 1rem; font-weight: 500; transition: all 0.3s ease; border-bottom: 1px solid rgba(0, 0, 0, 0.1);">📥 다운로드 통계</a>
+            <a href="/theme" style="font-family: '중나좋체', sans-serif; display: block; padding: 15px 20px; color: var(--text-color); text-decoration: none; font-size: 1rem; font-weight: 500; transition: all 0.3s ease; border-radius: 0 0 13px 13px;">🎨 테마 선택</a>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="header">
+            <div class="title">피드백 관리 시스템</div>
+            <div class="subtitle">사용자 피드백 현황 및 관리</div>
+            
+            <!-- 기간 선택 버튼 -->
+            <div class="period-selector">
+                <button class="period-btn active" onclick="changePeriod('week')" id="weekBtn">최근 7일</button>
+                <button class="period-btn" onclick="changePeriod('month')" id="monthBtn">최근 30일</button>
+                <button class="period-btn" onclick="changePeriod('all')" id="allBtn">전체</button>
+            </div>
+        </div>
+
+        <!-- 요약 카드 -->
+        <div class="summary-card">
+            <div class="summary-number" id="feedbackCount">-</div>
+            <div class="summary-text" id="periodText">피드백이 로딩 중입니다...</div>
+        </div>
+
+        <!-- 피드백 목록 -->
+        <div class="feedback-grid" id="feedbackGrid">
+            <!-- 피드백 카드들이 여기에 동적으로 추가됩니다 -->
+        </div>
+
+        <!-- 로딩 상태 -->
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>피드백 데이터를 불러오는 중...</p>
+        </div>
+    </div>
+
+    <script src="/static/feedback.js"></script>
+    <script src="/static/theme.js"></script>
+    <script>
+        // 페이지 로드 시 저장된 테마 적용
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.ThemeSystem) {
+                window.ThemeSystem.applyCurrentTheme();
+            }
+        });
+    </script>
+    
+    <script>
+        // 드롭다운 토글 함수
+        function toggleDropdown() {
+            const dropdownContent = document.getElementById('dropdownContent');
+            const dropdownArrow = document.querySelector('.dropdown-arrow');
+            
+            if (dropdownContent.style.opacity === '1') {
+                dropdownContent.style.opacity = '0';
+                dropdownContent.style.visibility = 'hidden';
+                dropdownContent.style.transform = 'translateY(-10px)';
+                dropdownArrow.style.transform = 'rotate(0deg)';
+            } else {
+                dropdownContent.style.opacity = '1';
+                dropdownContent.style.visibility = 'visible';
+                dropdownContent.style.transform = 'translateY(0)';
+                dropdownArrow.style.transform = 'rotate(180deg)';
+            }
+        }
+
+        // 외부 클릭 시 드롭다운 닫기
+        document.addEventListener('click', function(event) {
+            const dropdown = document.querySelector('.dropdown-menu');
+            const dropdownContent = document.getElementById('dropdownContent');
+            const dropdownArrow = document.querySelector('.dropdown-arrow');
+            
+            if (!dropdown.contains(event.target)) {
+                dropdownContent.style.opacity = '0';
+                dropdownContent.style.visibility = 'hidden';
+                dropdownContent.style.transform = 'translateY(-10px)';
+                dropdownArrow.style.transform = 'rotate(0deg)';
+            }
+        });
+
+        // 드롭다운 메뉴 호버 효과
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropdownLinks = document.querySelectorAll('.dropdown-content a');
+            dropdownLinks.forEach(link => {
+                link.addEventListener('mouseenter', function() {
+                    this.style.background = 'var(--card-background)';
+                    this.style.color = 'var(--primary-color)';
+                    this.style.fontWeight = '600';
+                });
+                link.addEventListener('mouseleave', function() {
+                    this.style.background = 'transparent';
+                    this.style.color = 'var(--text-color)';
+                    this.style.fontWeight = '500';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

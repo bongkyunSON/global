@@ -1,13 +1,698 @@
 <!DOCTYPE html>
 <html lang="ko">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PC Control System - 관리 대시보드</title>
-  </head>
-  <body class="bg-gray-100">
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>온라인콘텐츠 편집실 - 로그인</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎬</text></svg>">
+    <link rel="stylesheet" href="/static/themes.css">
+    <style>
+        /* 로컬 커스텀 폰트 정의 */
+        @font-face {
+            font-family: 'Cafe24Ssurround';
+            src: url('/assets/폰트/Cafe24Ssurround-v2.0/webfont/Cafe24Ssurround-v2.0.woff2') format('woff2'),
+                 url('/assets/폰트/Cafe24Ssurround-v2.0/webfont/Cafe24Ssurround-v2.0.woff') format('woff'),
+                 url('/assets/폰트/Cafe24Ssurround-v2.0/Cafe24Ssurround-v2.0.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        
+        @font-face {
+            font-family: '중나좋체';
+            src: url('/assets/폰트/중나좋체 맥 전용/중나좋체 OTF Medium.otf') format('opentype');
+            font-weight: 500;
+            font-style: normal;
+            font-display: swap;
+        }
+        
+        @font-face {
+            font-family: '중나좋체';
+            src: url('/assets/폰트/중나좋체 맥 전용/중나좋체 OTF Light.otf') format('opentype');
+            font-weight: 300;
+            font-style: normal;
+            font-display: swap;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: '중나좋체', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--background-color); /* 파스텔 핀크 배경 */
+            background-image: 
+                linear-gradient(45deg, rgba(183, 102, 141, 0.1) 25%, transparent 25%),
+                linear-gradient(-45deg, rgba(242, 213, 227, 0.1) 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, rgba(242, 213, 227, 0.1) 75%),
+                linear-gradient(-45deg, transparent 75%, rgba(242, 213, 227, 0.1) 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* 공통 레이아웃 */
+        .page-layout {
+            width: 100%;
+            max-width: 1200px;
+            display: grid;
+            grid-template-columns: 520px 1fr;
+            gap: 40px;
+            align-items: stretch; /* 높이를 같게 맞춤 */
+            padding: 20px;
+        }
+
+        /* 로그인 후 전용 레이아웃: 좌/우 동일 폭 */
+        .page-layout-after {
+            width: 100%;
+            max-width: 1200px;
+            display: grid;
+            grid-template-columns: 520px 1fr; /* 로그인 화면과 동일 고정 폭 */
+            gap: 40px;
+            align-items: stretch; /* 높이를 같게 맞춤 */
+            padding: 20px;
+        }
+
+        .container {
+            background: var(--card-background); /* 코랄 핀크 카드 */
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px var(--shadow-color); /* 레드 그림자 */
+            text-align: center;
+            min-width: 520px;
+            max-width: 560px;
+            border: 2px solid var(--border-color);
+        }
+
+        .logo {
+            font-family: 'Cafe24Ssurround', sans-serif;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: white; /* 흰색으로 변경 */
+            text-shadow: 2px 2px 4px var(--primary-color); /* 레드 음영 */
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-family: '중나좋체', sans-serif;
+            color: var(--text-color);
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .text {
+            font-family: '중나좋체', sans-serif;
+            color: var(--text-color);
+            margin-bottom: 30px;
+            font-size: 0.95rem;
+            opacity: 0.8;
+        }
+
+        .pc-number {
+            background: var(--primary-color); /* 레드 배경 */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 30px;
+            display: inline-block;
+            box-shadow: 0 4px 8px var(--border-color);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-group label {
+            font-family: '중나좋체', sans-serif;
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+                .form-group input {
+            font-family: '중나좋체', sans-serif;
+            width: 100%;
+            padding: 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        } 
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 10px rgba(242, 73, 73, 0.4);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            font-family: '중나좋체', sans-serif;
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-login {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: 0 4px 8px var(--border-color);
+        }
+
+        .btn-login:hover {
+            background: var(--accent-color);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px var(--shadow-color);
+        }
+
+        .btn-logout {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: 0 4px 8px var(--border-color);
+        }
+
+        .btn-logout:hover {
+            background: var(--accent-color);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px var(--shadow-color);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .status-message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .logged-in-status {
+            background: #d4edda;
+            color: #155724;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .loading {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 전역 스피너 애니메이션 */
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        /* 호출 버튼 호버 효과 */
+        #callBtn:hover, #callBtnMain:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px var(--shadow-color); /* 테마별 그림자 */
+        }
+
+        /* 우측 이용안내 패널 */
+        .guide-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            color: var(--text-color); /* 진한 블랙 텍스트 */
+            height: 100%; /* 그리드 높이에 맞춤 */
+            justify-content: space-between; /* 내용을 균등 분배 */
+            align-items: center; /* 전체 요소들을 가운데 정렬 */
+        }
+
+        .guide-badge {
+            font-family: 'Cafe24Ssurround', sans-serif;
+            background: var(--primary-color); /* 레드 배경 */
+            color: white;
+            font-weight: 800;
+            font-size: 1.8rem;
+            padding: 12px 16px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px var(--shadow-color);
+            letter-spacing: -0.5px;
+            width: 100%; /* 박스 너비와 같은 가로길이 */
+            text-align: center; /* 가운데 정렬 */
+            box-sizing: border-box; /* 패딩 포함 계산 */
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .guide-note {
+            font-family: '중나좋체', sans-serif;
+            background: var(--card-background); /* 코랄 핀크 */
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 18px 20px;
+            line-height: 1.6;
+            font-size: 1rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* 수직 가운데 정렬로 변경 */
+            max-height: 450px; /* 최대 높이 제한 */
+            overflow-y: auto; /* 내용이 많을 때 스크롤 */
+            width: 100%; /* 배지와 같은 가로길이 */
+            box-sizing: border-box; /* 패딩 포함 계산 */
+            text-align: center; /* 내용 가운데 정렬 */
+            min-height: 120px; /* 최소 높이 설정으로 공간 확보 */
+            color: var(--text-color);
+            box-shadow: 0 4px 8px var(--shadow-color);
+        }
+        
+        .guide-section {
+            margin-bottom: 0; /* 마진 제거로 간격 조정 */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%; /* 전체 높이 사용 */
+        }
+        
+        .guide-section h4 {
+            margin-bottom: 15px;
+        }
+        
+        .guide-section ul {
+            margin: 0; /* 상하 마진 제거 */
+        }
+        
+        .guide-note ul {
+            margin: 0;
+            padding-left: 0;
+            list-style: none;
+        }
+        
+        .guide-note li {
+            font-family: '중나좋체', sans-serif;
+            margin-bottom: 8px;
+            padding-left: 0; /* 가운데 정렬을 위해 좌측 패딩 제거 */
+            line-height: 1.5;
+            font-size: 0.95rem;
+            text-align: center; /* 리스트 아이템 가운데 정렬 */
+            color: var(--text-color);
+        }
+        
+        .guide-note li:last-child {
+            margin-bottom: 0;
+        }
+
+        .guide-note li { margin-left: 8px; }
+
+        .qr-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%; /* 전체 너비 사용 */
+        }
+
+        .qr-card {
+            background: white;
+            border-radius: 16px;
+            padding: 10px;
+            text-align: center;
+            color: var(--text-color);
+            box-shadow: 0 10px 30px var(--shadow-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 2px solid var(--shadow-color);
+        }
+
+        .qr-card img {
+            width: 100%;
+            max-width: 260px;
+            height: auto;
+            border-radius: 10px;
+        }
+
+        .qr-title { 
+            font-family: '중나좋체', sans-serif;
+            font-weight: 800; 
+            margin-top: 10px; 
+            color: var(--text-color);
+        }
+        .qr-desc { 
+            font-family: '중나좋체', sans-serif;
+            font-size: 0.9rem; 
+            color: var(--text-color); 
+            margin-top: 4px; 
+        }
+
+        /* QR 클릭 가능 스타일 */
+        .qr-clickable {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .qr-clickable:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px var(--border-color);
+        }
+        
+        .qr-clickable:active {
+            transform: translateY(-1px);
+        }
+
+        /* 로그인 후 화면 */
+        #afterLoginView { display: none; width: 100%; max-width: 1200px; }
+        .after-card {
+            background: var(--card-background); /* 코랄 핀크 */
+            border: 2px solid var(--border-color);
+            border-radius: 20px; /* .container와 동일 */
+            padding: 40px 20px; /* .container와 동일 */
+            box-shadow: 0 20px 40px var(--shadow-color); /* .container와 동일 */
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            min-width: 520px; /* .container와 동일 */
+            max-width: 560px; /* .container와 동일 */
+        }
+        .after-check {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2); /* 사용안내와 동일한 반투명 배경 */
+            border: 2px solid var(--secondary-color); /* 테마별 테두리 */
+            display: flex; align-items: center; justify-content: center;
+            margin: 4px auto 8px;
+            font-size: 1.4rem;
+        }
+        .after-title { 
+            font-family: 'Cafe24Ssurround', sans-serif;
+            text-align: center; 
+            font-size: 2rem; 
+            font-weight: 800; 
+            margin-bottom: 12px; 
+            color: white; /* 흰색으로 변경 */
+            text-shadow: 2px 2px 4px var(--primary-color); /* 더 진한 레드 음영 */
+        }
+        .after-note {
+            font-family: '중나좋체', sans-serif;
+            border: 2px solid var(--secondary-color); /* 테마별 테두리 */
+            background: rgba(255, 255, 255, 0.2); /* 반투명 배경 */
+            backdrop-filter: blur(10px); /* 유리 효과 */
+            border-radius: 16px;
+            padding: 20px 18px;
+            text-align: center;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 6px;
+            color: var(--text-color);
+        }
+        .after-buttons { display: flex; gap: 14px; margin-top: auto; }
+        .after-buttons .btn { 
+            font-family: '중나좋체', sans-serif;
+            padding: 16px; 
+            font-weight: 800; 
+        }
+
+        /* 로그인 후 화면에서 QR 이미지를 더 크게 */
+        .page-layout-after .qr-card img { max-width: 260px; } /* 로그인 화면과 동일 */
+
+    </style>
+</head>
+<body>
+    <div id="loginView" class="page-layout">
+        <!-- 좌측: 로그인 카드 -->
+        <div class="container">
+            <div class="logo">🎬 온라인콘텐츠편집실</div>
+            <div class="subtitle">PC를 사용하시려면 로그인 부탁드립니다</div>
+            <div class="text">로그인 정보는 저장되지 않습니다</div>
+            <div class="pc-number" id="pcNumber">PC 번호를 로딩중...</div>
+
+            <!-- 로그인 상태 표시 -->
+            <div id="loggedInStatus" class="logged-in-status" style="display: none;">
+                <h3>✅ 로그인 완료!</h3>
+                <p id="userInfo"></p>
+                <div class="btn-group" style="margin-top: 20px;">
+                    <button type="button" class="btn" id="callBtn" onclick="showCallDialog()" style="font-family: '중나좋체', sans-serif; background: linear-gradient(135deg, var(--call-button-color) 0%, var(--call-button-hover) 100%); color: white; font-size: 1.1rem; font-weight: bold; padding: 15px 25px; box-shadow: 0 4px 15px var(--shadow-color);"
+                        🔔 호출
+                    </button>
+                </div>
+            </div>
+
+            <!-- 로그인 폼 -->
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="name">이름</label>
+                    <input type="text" id="name" name="name" required placeholder="이름을 입력해주세요" tabindex="1">
+                </div>
+                <div class="form-group">
+                    <label for="affiliation">소속</label>
+                    <input type="text" id="affiliation" name="affiliation" required placeholder="소속을 입력해주세요" tabindex="2">
+                </div>
+                <div class="form-group">
+                    <label for="contact">연락처</label>
+                    <input type="tel" id="contact" name="contact" placeholder="연락처를 입력해주세요" tabindex="3">
+                </div>
+                <div class="form-group">
+                    <label for="email">이메일</label>
+                    <input type="email" id="email" name="email" placeholder="이메일을 입력해주세요" tabindex="4">
+                </div>
+                <div class="btn-group">
+                    <button type="button" class="btn" id="callBtnMain" onclick="handleCallFromLogin()" style="font-family: '중나좋체', sans-serif; background: linear-gradient(135deg, var(--call-button-color) 0%, var(--call-button-hover) 100%); color: white; font-weight: bold; box-shadow: 0 4px 8px var(--shadow-color);" tabindex="5">🔔 호출</button>
+                    <button type="submit" class="btn btn-login" id="loginBtn" tabindex="6">로그인</button>
+                </div>
+            </form>
+
+            <!-- 로딩 상태 -->
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>처리중...</p>
+            </div>
+
+            <!-- 상태 메시지 -->
+            <div id="statusMessage"></div>
+        </div>
+
+        <!-- 우측: 이용 안내 + QR 코드 -->
+        <div class="guide-panel">
+            <div class="guide-badge">온라인콘텐츠편집실 이용안내</div>
+            <div class="guide-note">
+                <div class="guide-section">
+                    <h4 style="margin-bottom: 15px; font-size: 1.5rem; color: #fff; text-align: center; font-weight: 800;">✅ 로그인 후 PC를 이용해주세요</h4>
+                    <ul style="margin-bottom: 18px;">
+                        <li>💾 개인 데이터는 개인 저장장치에 저장해주세요</li>
+                        <li>⚠️ 공용PC의 개인 데이터는 삭제될 수 있어요</li>
+                        <li>🎧 편집작업시 개인 이어폰을 사용해주세요</li>
+                        <li>📞 문의사항은 호출버튼을 눌러주세요!</li>
+                    </ul>
+                </div>
+            </div>
+            <div style="background: var(--card-background); border: 2px solid var(--border-color); border-radius: 16px; padding: 18px 20px; text-align: center; width: 100%; box-sizing: border-box; box-shadow: 0 4px 8px var(--shadow-color);">
+                <div style="font-family: '중나좋체', sans-serif; font-weight: bold; font-size: 1.3rem; margin-bottom: 8px; color: white;">📝 QR 코드 안내</div>
+                <div style="font-family: '중나좋체', sans-serif; font-size: 1.1rem; line-height: 1.4; opacity: 0.9; color: var(--text-color);">아래 QR 코드를 스캔하거나 🖱️ 클릭해주세요</div>
+            </div>
+            <div class="qr-grid">
+                <div class="qr-card qr-clickable" onclick="openQRLink('https://docs.google.com/forms/d/e/1FAIpQLSevIw5Cunzb-D83zX-u3ELt58LUUMvvDa94pw0lB306rbfLWw/viewform')">
+                    <div class="qr-desc" style="font-weight: bold; margin-bottom: 10px; color: #333; font-size: 1.1rem;">교육 신청은 QR로 간편하게!</div>
+                    <img alt="교육 신청서 QR" src="/assets/로그인/qr_code1.png" />
+                    <div class="qr-title">교육 신청서</div>
+                </div>
+                <div class="qr-card qr-clickable" onclick="openQRLink('https://docs.google.com/forms/d/e/1FAIpQLSc8Rf5LCS_YNQ7P24s4yhjrT03I8m5510PETSCn8UlwpHdvUg/viewform')">
+                    <div class="qr-desc" style="font-weight: bold; margin-bottom: 10px; color: #333; font-size: 1.1rem;">설문 작성하면 숏츠 템플릿 제공!</div>
+                    <img alt="만족도 설문지 QR" src="/assets/로그인/qr_code2.png" />
+                    <div class="qr-title">만족도 설문지</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 로그인 후 화면 (이미지 @로그인후.png 분위기 재현, 기존 로그인 화면은 유지) -->
+    <div id="afterLoginView">
+        <div class="page-layout-after">
+            <!-- 좌: 완료 카드 -->
+            <div class="after-card">
+                <div class="after-check">✅</div>
+                <div class="after-title">로그인 완료!</div>
+                <div class="after-note">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <div style="font-family: 'Cafe24Ssurround', sans-serif; font-size: 1.4rem; font-weight: 800; color: white; margin-bottom: 8px; text-shadow: 2px 2px 4px var(--primary-color);">피드백을 남겨주세요!</div>
+                        <div style="font-family: '중나좋체', sans-serif; font-size: 1rem; font-weight: 600; opacity: 0.9; color: var(--text-color);">여러분의 소중한 의견을 기다립니다</div>
+                    </div>
+                    
+                    <!-- 피드백 작성 폼 -->
+                    <div style="background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); border: 2px solid var(--secondary-color); border-radius: 15px; padding: 20px;">
+                        <form id="feedbackForm">
+                            <div style="margin-bottom: 12px;">
+                                <label for="feedbackText" style="font-family: '중나좋체', sans-serif; font-size: 1rem; font-weight: 600; color: var(--text-color); display: block; margin-bottom: 6px;">피드백 내용</label>
+                                <textarea id="feedbackText" name="feedbackText" rows="5" placeholder="개선사항, 문제점, 제안사항 등을 자유롭게 작성해주세요..." 
+                                    style="width: 100%; height: 120px; padding: 12px; border: 2px solid var(--secondary-color); border-radius: 8px; font-family: '중나좋체', sans-serif; font-size: 1rem; resize: none; background: rgba(255, 255, 255, 0.9);" required></textarea>
+                            </div>
+                            <div style="margin-bottom: 12px;">
+                                <label for="feedbackType" style="font-family: '중나좋체', sans-serif; font-size: 1rem; font-weight: 600; color: var(--text-color); display: block; margin-bottom: 6px;">카테고리</label>
+                                <select id="feedbackType" name="feedbackType" 
+                                    style="width: 100%; padding: 10px; border: 2px solid var(--secondary-color); border-radius: 8px; font-family: '중나좋체', sans-serif; font-size: 0.9rem; background: rgba(255, 255, 255, 0.9);">
+                                    <option value="suggestion">제안사항</option>
+                                    <option value="bug">버그 신고</option>
+                                    <option value="improvement">개선사항</option>
+                                    <option value="other">기타</option>
+                                </select>
+                            </div>
+                            <button type="submit" id="feedbackSubmitBtn" 
+                                style="width: 100%; padding: 12px; background: linear-gradient(135deg, var(--feedback-button-color) 0%, var(--feedback-button-hover) 100%); color: white; border: none; border-radius: 8px; font-family: '중나좋체', sans-serif; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px var(--shadow-color);">
+                                피드백 전송
+                            </button>
+                        </form>
+                    </div>
+
+                </div>
+                <div class="after-buttons">
+                    <button type="button" class="btn" onclick="showCallDialog()" style="font-family: '중나좋체', sans-serif; background: linear-gradient(135deg, var(--call-button-color) 0%, var(--call-button-hover) 100%); color: white; flex:1; box-shadow: 0 4px 8px var(--shadow-color);">🔔 호출</button>
+                    <button type="button" class="btn btn-logout" onclick="showLogoutOptions()" style="flex:1;">사용 종료 (로그아웃)</button>
+                </div>
+            </div>
+
+            <!-- 우: 이용안내 + QR 2개 -->
+            <div class="guide-panel">
+                <div class="guide-badge">온라인콘텐츠편집실 이용안내</div>
+                <div class="guide-note" style="color:#fff;">
+                    <div class="guide-section">
+                        <h4 style="margin-bottom: 15px; font-size: 1.5rem; color: #fff; text-align: center; font-weight: 800;">✅ 로그인 후 PC를 이용해주세요</h4>
+                        <ul style="margin-bottom: 18px;"> <!-- 로그인 화면과 동일 -->
+                            <li>💾 개인 데이터는 개인 저장장치에 저장해주세요</li>
+                            <li>⚠️ 공용PC의 개인 데이터는 삭제될 수 있어요</li>
+                            <li>🎧 편집작업시 개인 이어폰을 사용해주세요</li>
+                            <li>📞 문의사항은 호출버튼을 눌러주세요!</li>
+                        </ul>
+                    </div>
+                </div>
+                <div style="background: var(--card-background); border: 2px solid var(--border-color); border-radius: 16px; padding: 18px 20px; text-align: center; width: 100%; box-sizing: border-box; box-shadow: 0 4px 8px var(--shadow-color);">
+                    <div style="font-family: '중나좋체', sans-serif; font-weight: bold; font-size: 1.3rem; margin-bottom: 8px; color: white;">📝 QR 코드 안내</div>
+                    <div style="font-family: '중나좋체', sans-serif; font-size: 1.1rem; line-height: 1.4; opacity: 0.9; color: var(--text-color);">아래 QR 코드를 스캔하거나 🖱️ 클릭해주세요</div>
+                </div>
+                <div class="qr-grid">
+                    <div class="qr-card qr-clickable" onclick="openQRLink('https://docs.google.com/forms/d/e/1FAIpQLSevIw5Cunzb-D83zX-u3ELt58LUUMvvDa94pw0lB306rbfLWw/viewform')">
+                        <div class="qr-desc" style="font-weight: bold; margin-bottom: 10px; color: #333; font-size: 1.1rem;">교육 신청은 QR로 간편하게!</div>
+                        <img alt="교육 신청서 QR" src="/assets/로그인/qr_code1.png" />
+                        <div class="qr-title">교육 신청서</div>
+                    </div>
+                    <div class="qr-card qr-clickable" onclick="openQRLink('https://docs.google.com/forms/d/e/1FAIpQLSc8Rf5LCS_YNQ7P24s4yhjrT03I8m5510PETSCn8UlwpHdvUg/viewform')">
+                        <div class="qr-desc" style="font-weight: bold; margin-bottom: 10px; color: #333; font-size: 1.1rem;">설문 작성하면 숏츠 템플릿 제공!</div>
+                        <img alt="만족도 설문지 QR" src="/assets/로그인/qr_code2.png" />
+                        <div class="qr-title">만족도 설문지</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/theme.js"></script>
+    <script src="/static/script.js"></script>
+    <script>
+        // 페이지 로드 시 저장된 테마 적용
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.ThemeSystem) {
+                window.ThemeSystem.applyCurrentTheme();
+            }
+        });
+    </script>
+    <script>
+        // PC 번호 가져오기 (동적으로)
+        let PC_NUMBER = 1; // 기본값
+        
+        // 서버에서 PC 번호를 가져오는 함수
+        async function loadPCNumber() {
+            try {
+                // 기본적으로는 1번으로 설정하고, config가 있으면 그것을 사용
+                const response = await fetch('/api/config');
+                if (response.ok) {
+                    const config = await response.json();
+                    PC_NUMBER = config.pc_number || 1;
+                } else {
+                    PC_NUMBER = 1; // 기본값
+                }
+            } catch (error) {
+                PC_NUMBER = 1; // 에러시 기본값
+            }
+            
+            // PC 번호 표시 업데이트
+            document.getElementById('pcNumber').textContent = `${PC_NUMBER}번 PC`;
+        }
+        
+        // QR 코드 클릭 함수
+        function openQRLink(url) {
+            // 새 탭에서 URL 열기
+            window.open(url, '_blank', 'noopener,noreferrer');
+        }
+
+        // 페이지 로드 시 실행
+        document.addEventListener('DOMContentLoaded', async function() {
+            // 테마 시스템 초기화
+            if (window.ThemeSystem) {
+                window.ThemeSystem.applyCurrentTheme();
+            }
+            
+            // PC 번호 로드
+            await loadPCNumber();
+            
+            // 키보드 이벤트 차단 (보안)
+            blockSystemKeys();
+            
+            // 우클릭 차단
+            document.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+            });
+        });
+    </script>
+</body>
 </html> 

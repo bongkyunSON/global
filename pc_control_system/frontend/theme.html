@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>테마 선택 - 온라인콘텐츠편집실</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎨</text></svg>">
+    
+    <!-- 기존 스타일 -->
+    <style>
+        /* 로컬 커스텀 폰트 정의 */
+        @font-face {
+            font-family: 'Cafe24Ssurround';
+            src: url('/assets/폰트/Cafe24Ssurround-v2.0/webfont/Cafe24Ssurround-v2.0.woff2') format('woff2'),
+                 url('/assets/폰트/Cafe24Ssurround-v2.0/webfont/Cafe24Ssurround-v2.0.woff') format('woff'),
+                 url('/assets/폰트/Cafe24Ssurround-v2.0/Cafe24Ssurround-v2.0.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        
+        @font-face {
+            font-family: '중나좋체';
+            src: url('/assets/폰트/중나좋체 맥 전용/중나좋체 OTF Medium.otf') format('opentype');
+            font-weight: 500;
+            font-style: normal;
+            font-display: swap;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: '중나좋체', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--background-color, #F2D5E3);
+            background-image: 
+                linear-gradient(45deg, rgba(183, 102, 141, 0.1) 25%, transparent 25%),
+                linear-gradient(-45deg, rgba(242, 213, 227, 0.1) 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, rgba(242, 213, 227, 0.1) 75%),
+                linear-gradient(-45deg, transparent 75%, rgba(242, 213, 227, 0.1) 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            min-height: 100vh;
+            color: var(--text-color, #0D0D0D);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .title {
+            font-family: 'Cafe24Ssurround', sans-serif;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: white;
+            text-shadow: var(--text-shadow, 2px 2px 4px #F24949);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-family: '중나좋체', sans-serif;
+            color: var(--text-color, #0D0D0D);
+            font-size: 1.2rem;
+            opacity: 0.8;
+            margin-bottom: 20px;
+        }
+
+        .back-btn {
+            font-family: '중나좋체', sans-serif;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+            z-index: 1000;
+        }
+
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        .current-theme {
+            background: var(--card-background, #F2BBBF);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 40px;
+            text-align: center;
+            border: 2px solid var(--border-color, rgba(242, 73, 73, 0.3));
+            box-shadow: 0 10px 20px var(--shadow-color, rgba(242, 73, 73, 0.2));
+        }
+
+        .current-theme-label {
+            font-family: '중나좋체', sans-serif;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            opacity: 0.8;
+        }
+
+        .current-theme-name {
+            font-family: 'Cafe24Ssurround', sans-serif;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            text-shadow: var(--text-shadow, 2px 2px 4px #F24949);
+        }
+
+        .themes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .theme-card {
+            background: var(--card-background, #F2BBBF);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px var(--shadow-color, rgba(242, 73, 73, 0.2));
+            border: 2px solid var(--border-color, rgba(242, 73, 73, 0.3));
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .theme-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 45px var(--shadow-color, rgba(242, 73, 73, 0.3));
+        }
+
+        .theme-card.active {
+            border-width: 4px;
+            border-color: var(--primary-color, #F24949);
+        }
+
+        .theme-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .theme-name {
+            font-family: 'Cafe24Ssurround', sans-serif;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            text-shadow: var(--text-shadow, 2px 2px 4px #F24949);
+            margin-bottom: 10px;
+        }
+
+        .theme-description {
+            font-family: '중나좋체', sans-serif;
+            color: var(--text-color, #0D0D0D);
+            font-size: 1rem;
+            opacity: 0.8;
+            line-height: 1.5;
+        }
+
+        .theme-preview {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        /* 핑크 테마 카드만 특별히 고정 - 배경 테마 변경에 영향받지 않음 */
+        .theme-card[data-theme="pink"] {
+            background: #F2BBBF !important;
+            border: 2px solid rgba(242, 73, 73, 0.3) !important;
+            box-shadow: 0 20px 40px rgba(242, 73, 73, 0.2) !important;
+        }
+        
+        .theme-card[data-theme="pink"]:hover {
+            box-shadow: 0 25px 45px rgba(242, 73, 73, 0.3) !important;
+        }
+        
+        .theme-card[data-theme="pink"].active {
+            border-color: #F24949 !important;
+        }
+        
+        .theme-card[data-theme="pink"] .theme-name {
+            text-shadow: 2px 2px 4px #F24949 !important;
+        }
+        
+        .theme-card[data-theme="pink"] .theme-description {
+            color: #0D0D0D !important;
+        }
+        
+        .theme-card[data-theme="pink"] .theme-preview {
+            background: linear-gradient(135deg, #F24949, #F2BBBF) !important;
+        }
+        
+        .theme-card[data-theme="green"] .theme-preview {
+            background: linear-gradient(135deg, #5A8A47, #7FB069) !important;
+        }
+        
+        .theme-card[data-theme="blue"] .theme-preview {
+            background: linear-gradient(135deg, #357ABD, #4A90E2) !important;
+        }
+        
+        .theme-card[data-theme="brown"] .theme-preview {
+            background: linear-gradient(135deg, #B8860B, #D2691E) !important;
+        }
+        
+        .theme-card[data-theme="blackwhite"] .theme-preview {
+            background: linear-gradient(135deg, #1A202C, #2D3748) !important;
+        }
+
+        .apply-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #c3e6cb;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2rem;
+            }
+            
+            .themes-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .back-btn {
+                top: 10px;
+                left: 10px;
+                padding: 10px 20px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+    
+    <!-- 테마 CSS -->
+    <link rel="stylesheet" href="/static/themes.css">
+</head>
+<body>
+    <button class="back-btn" onclick="goBack()">← 돌아가기</button>
+    
+    <!-- 드롭다운 메뉴 -->
+    <div class="dropdown-menu" style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
+        <button class="dropdown-btn" onclick="toggleDropdown()" style="font-family: '중나좋체', sans-serif; padding: 12px 20px; background: var(--primary-color); color: white; border: none; border-radius: 25px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 8px var(--shadow-color); display: flex; align-items: center; gap: 8px;">
+            ⚙️ 메뉴
+            <span class="dropdown-arrow" style="transition: transform 0.3s ease; font-size: 0.8rem;">▼</span>
+        </button>
+        <div class="dropdown-content" id="dropdownContent" style="position: absolute; top: 100%; right: 0; background: white; min-width: 200px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); border: 2px solid var(--border-color); margin-top: 8px; opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.3s ease;">
+            <a href="/graph" style="font-family: '중나좋체', sans-serif; display: block; padding: 15px 20px; color: var(--text-color); text-decoration: none; font-size: 1rem; font-weight: 500; transition: all 0.3s ease; border-bottom: 1px solid rgba(0, 0, 0, 0.1); border-radius: 13px 13px 0 0;">📊 사용자 통계</a>
+            <a href="/download" style="font-family: '중나좋체', sans-serif; display: block; padding: 15px 20px; color: var(--text-color); text-decoration: none; font-size: 1rem; font-weight: 500; transition: all 0.3s ease; border-bottom: 1px solid rgba(0, 0, 0, 0.1);">📥 다운로드 통계</a>
+            <a href="/feedback" style="font-family: '중나좋체', sans-serif; display: block; padding: 15px 20px; color: var(--text-color); text-decoration: none; font-size: 1rem; font-weight: 500; transition: all 0.3s ease; border-radius: 0 0 13px 13px;">💬 피드백 통계</a>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="header">
+            <div class="title">🎨 테마 선택</div>
+            <div class="subtitle">원하는 테마를 선택해서 시스템 전체 색상을 변경하세요</div>
+        </div>
+
+        <div class="current-theme">
+            <div class="current-theme-label">현재 적용된 테마</div>
+            <div class="current-theme-name" id="currentThemeName">핑크 테마</div>
+        </div>
+
+        <div class="themes-grid">
+            <!-- 핑크 테마 (기본) -->
+            <div class="theme-card active" data-theme="pink" onclick="selectTheme('pink')">
+                <div class="theme-preview"></div>
+                <div class="theme-icon">💗</div>
+                <div class="theme-name">핑크 테마</div>
+                <div class="theme-description">따뜻하고 부드러운 핑크색 계열의 기본 테마입니다.</div>
+            </div>
+
+            <!-- 그린 테마 -->
+            <div class="theme-card" data-theme="green" onclick="selectTheme('green')">
+                <div class="theme-preview"></div>
+                <div class="theme-icon">🌿</div>
+                <div class="theme-name">그린 테마</div>
+                <div class="theme-description">싱그러운 연두색과 파스텔 그린으로 자연의 생명력을 표현합니다.</div>
+            </div>
+
+            <!-- 블루 테마 -->
+            <div class="theme-card" data-theme="blue" onclick="selectTheme('blue')">
+                <div class="theme-preview"></div>
+                <div class="theme-icon">💙</div>
+                <div class="theme-name">블루 테마</div>
+                <div class="theme-description">시원한 블루 톤으로 차분하고 안정감 있는 분위기를 연출합니다.</div>
+            </div>
+
+            <!-- 브라운 테마 -->
+            <div class="theme-card" data-theme="brown" onclick="selectTheme('brown')">
+                <div class="theme-preview"></div>
+                <div class="theme-icon">🤎</div>
+                <div class="theme-name">브라운 테마</div>
+                <div class="theme-description">따뜻한 브라운과 황금색으로 고급스럽고 편안한 느낌을 줍니다.</div>
+            </div>
+
+            <!-- 블랙&화이트 테마 -->
+            <div class="theme-card" data-theme="blackwhite" onclick="selectTheme('blackwhite')">
+                <div class="theme-preview"></div>
+                <div class="theme-icon">⚫</div>
+                <div class="theme-name">블랙&화이트 테마</div>
+                <div class="theme-description">모던하고 세련된 흑백 조합으로 깔끔하고 전문적인 분위기를 연출합니다.</div>
+            </div>
+        </div>
+
+        <div class="apply-message" id="applyMessage">
+            ✅ 테마가 적용되었습니다! 모든 페이지에서 새로운 테마를 확인하실 수 있습니다.
+        </div>
+    </div>
+
+    <script src="/static/theme.js"></script>
+    
+    <script>
+        // 드롭다운 토글 함수
+        function toggleDropdown() {
+            const dropdownContent = document.getElementById('dropdownContent');
+            const dropdownArrow = document.querySelector('.dropdown-arrow');
+            
+            if (dropdownContent.style.opacity === '1') {
+                dropdownContent.style.opacity = '0';
+                dropdownContent.style.visibility = 'hidden';
+                dropdownContent.style.transform = 'translateY(-10px)';
+                dropdownArrow.style.transform = 'rotate(0deg)';
+            } else {
+                dropdownContent.style.opacity = '1';
+                dropdownContent.style.visibility = 'visible';
+                dropdownContent.style.transform = 'translateY(0)';
+                dropdownArrow.style.transform = 'rotate(180deg)';
+            }
+        }
+
+        // 외부 클릭 시 드롭다운 닫기
+        document.addEventListener('click', function(event) {
+            const dropdown = document.querySelector('.dropdown-menu');
+            const dropdownContent = document.getElementById('dropdownContent');
+            const dropdownArrow = document.querySelector('.dropdown-arrow');
+            
+            if (!dropdown.contains(event.target)) {
+                dropdownContent.style.opacity = '0';
+                dropdownContent.style.visibility = 'hidden';
+                dropdownContent.style.transform = 'translateY(-10px)';
+                dropdownArrow.style.transform = 'rotate(0deg)';
+            }
+        });
+
+        // 드롭다운 메뉴 호버 효과
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropdownLinks = document.querySelectorAll('.dropdown-content a');
+            dropdownLinks.forEach(link => {
+                link.addEventListener('mouseenter', function() {
+                    this.style.background = 'var(--card-background)';
+                    this.style.color = 'var(--primary-color)';
+                    this.style.fontWeight = '600';
+                });
+                link.addEventListener('mouseleave', function() {
+                    this.style.background = 'transparent';
+                    this.style.color = 'var(--text-color)';
+                    this.style.fontWeight = '500';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

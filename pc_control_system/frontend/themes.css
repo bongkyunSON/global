@@ -1,0 +1,217 @@
+/* 
+온라인콘텐츠편집실 테마 시스템 
+계절별/이벤트별 색상 테마 정의
+*/
+
+/* 기본 CSS 변수 정의 */
+:root {
+    /* 기본 핑크 테마 (현재) */
+    --primary-color: #F24949;
+    --secondary-color: #F2BBBF;
+    --background-color: #F2D5E3;
+    --background-gradient: linear-gradient(135deg, #F2D5E3 0%, #F2BBBF 50%, #F2D5E3 100%);
+    --accent-color: #E03E3E;
+    --text-color: #0D0D0D;
+    --card-background: #F2BBBF;
+    --border-color: rgba(242, 73, 73, 0.3);
+    --shadow-color: rgba(242, 73, 73, 0.2);
+    --shadow-hover: rgba(242, 73, 73, 0.4);
+    --text-shadow: 2px 2px 4px #F24949;
+    --text-secondary: #666;
+    --accent-background: rgba(242, 187, 191, 0.1);
+    --hover-background: #F2BBBF;
+    --summary-background: #F2BBBF;
+    --loading-background: rgba(242, 213, 227, 0.9);
+    --spinner-track: rgba(242, 73, 73, 0.2);
+    --call-button-color: #10B981;
+    --call-button-hover: #059669;
+    --feedback-button-color: #667eea;
+    --feedback-button-hover: #764ba2;
+}
+
+/* 그린 테마 🌿 */
+[data-theme="green"] {
+    --primary-color: #5A8A47;
+    --secondary-color: #7FB069;
+    --background-color: #E8F5E1;
+    --background-gradient: linear-gradient(135deg, #E8F5E1 0%, #D4E6C7 50%, #E8F5E1 100%);
+    --accent-color: #4A7A37;
+    --text-color: #2D4A2B;
+    --card-background: #D4E6C7;
+    --border-color: rgba(90, 138, 71, 0.4);
+    --shadow-color: rgba(90, 138, 71, 0.3);
+    --shadow-hover: rgba(90, 138, 71, 0.5);
+    --text-shadow: 2px 2px 4px #5A8A47;
+    --text-secondary: #6B7C6B;
+    --accent-background: rgba(127, 176, 105, 0.1);
+    --hover-background: #D4E6C7;
+    --summary-background: #D4E6C7;
+    --loading-background: rgba(232, 245, 225, 0.9);
+    --spinner-track: rgba(90, 138, 71, 0.2);
+    --call-button-color: #F59E0B;
+    --call-button-hover: #D97706;
+    --feedback-button-color: #8B5CF6;
+    --feedback-button-hover: #7C3AED;
+}
+
+/* 블루 테마 💙 */
+[data-theme="blue"] {
+    --primary-color: #357ABD;
+    --secondary-color: #4A90E2;
+    --background-color: #D1E7FF;
+    --background-gradient: linear-gradient(135deg, #D1E7FF 0%, #B8D4F0 50%, #D1E7FF 100%);
+    --accent-color: #2A6BA8;
+    --text-color: #1A4B6B;
+    --card-background: #B8D4F0;
+    --border-color: rgba(53, 122, 189, 0.4);
+    --shadow-color: rgba(53, 122, 189, 0.3);
+    --shadow-hover: rgba(53, 122, 189, 0.5);
+    --text-shadow: 2px 2px 4px #357ABD;
+    --text-secondary: #5A7A9B;
+    --accent-background: rgba(74, 144, 226, 0.1);
+    --hover-background: #B8D4F0;
+    --summary-background: #B8D4F0;
+    --loading-background: rgba(209, 231, 255, 0.9);
+    --spinner-track: rgba(53, 122, 189, 0.2);
+    --call-button-color: #EF4444;
+    --call-button-hover: #DC2626;
+    --feedback-button-color: #10B981;
+    --feedback-button-hover: #059669;
+}
+
+/* 브라운 테마 🤎 */
+[data-theme="brown"] {
+    --primary-color: #B8860B;
+    --secondary-color: #D2691E;
+    --background-color: #FFE4B5;
+    --background-gradient: linear-gradient(135deg, #FFE4B5 0%, #F0D090 50%, #FFE4B5 100%);
+    --accent-color: #A0750A;
+    --text-color: #8B4513;
+    --card-background: #F0D090;
+    --border-color: rgba(184, 134, 11, 0.4);
+    --shadow-color: rgba(184, 134, 11, 0.3);
+    --shadow-hover: rgba(184, 134, 11, 0.5);
+    --text-shadow: 2px 2px 4px #B8860B;
+    --text-secondary: #A0750A;
+    --accent-background: rgba(210, 105, 30, 0.1);
+    --hover-background: #F0D090;
+    --summary-background: #F0D090;
+    --loading-background: rgba(255, 228, 181, 0.9);
+    --spinner-track: rgba(184, 134, 11, 0.2);
+    --call-button-color: #DC2626;
+    --call-button-hover: #B91C1C;
+    --feedback-button-color: #3B82F6;
+    --feedback-button-hover: #2563EB;
+}
+
+/* 블랙&화이트 테마 ⚫⚪ */
+[data-theme="blackwhite"] {
+    --primary-color: #2D3748;
+    --secondary-color: #4A5568;
+    --background-color: #1A202C;
+    --background-gradient: linear-gradient(135deg, #1A202C 0%, #2D3748 50%, #1A202C 100%);
+    --accent-color: #1A202C;
+    --text-color: #FFFFFF;
+    --card-background: #2D3748;
+    --border-color: rgba(255, 255, 255, 0.3);
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --shadow-hover: rgba(0, 0, 0, 0.5);
+    --text-shadow: 2px 2px 4px #1A202C;
+    --text-secondary: #A0AEC0;
+    --accent-background: rgba(74, 85, 104, 0.1);
+    --hover-background: #2D3748;
+    --summary-background: #2D3748;
+    --loading-background: rgba(26, 32, 44, 0.9);
+    --spinner-track: rgba(255, 255, 255, 0.2);
+    --call-button-color: #3B82F6;
+    --call-button-hover: #2563EB;
+    --feedback-button-color: #8B5CF6;
+    --feedback-button-hover: #7C3AED;
+}
+
+/* 테마별 배경 패턴 */
+[data-theme="green"] body {
+    background-image: 
+        linear-gradient(45deg, rgba(181, 214, 167, 0.1) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(240, 248, 232, 0.1) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(240, 248, 232, 0.1) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(240, 248, 232, 0.1) 75%);
+}
+
+[data-theme="blue"] body {
+    background-image: 
+        linear-gradient(45deg, rgba(135, 206, 235, 0.1) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(230, 243, 255, 0.1) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(230, 243, 255, 0.1) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(230, 243, 255, 0.1) 75%);
+}
+
+[data-theme="brown"] body {
+    background-image: 
+        linear-gradient(45deg, rgba(244, 164, 96, 0.1) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(255, 248, 220, 0.1) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(255, 248, 220, 0.1) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(255, 248, 220, 0.1) 75%);
+}
+
+[data-theme="blackwhite"] body {
+    background-image: 
+        linear-gradient(45deg, rgba(255, 255, 255, 0.02) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(255, 255, 255, 0.05) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.05) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.05) 75%);
+}
+
+/* 테마 전환 애니메이션 */
+* {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* 테마별 특수 효과 */
+[data-theme="green"] .container::before,
+[data-theme="green"] .stat-card::before,
+[data-theme="green"] .chart-container::before {
+    content: "🌿";
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    font-size: 1.5rem;
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+[data-theme="blue"] .container::before,
+[data-theme="blue"] .stat-card::before,
+[data-theme="blue"] .chart-container::before {
+    content: "💙";
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    font-size: 1.5rem;
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+[data-theme="brown"] .container::before,
+[data-theme="brown"] .stat-card::before,
+[data-theme="brown"] .chart-container::before {
+    content: "🤎";
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    font-size: 1.5rem;
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+[data-theme="blackwhite"] .container::before,
+[data-theme="blackwhite"] .stat-card::before,
+[data-theme="blackwhite"] .chart-container::before {
+    content: "⚫";
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    font-size: 1.5rem;
+    opacity: 0.3;
+    pointer-events: none;
+}

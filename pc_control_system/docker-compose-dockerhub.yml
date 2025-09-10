@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  pc-control-backend:
+    image: bongkyunson/pc-control-system:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./.env:/app/.env:ro
+      - ./config.json:/app/config.json:ro
+      - ./image:/app/image:ro  # 이미지 폴더 마운트
+      - ./backend/login_history.json:/app/login_history.json
+      - ./backend/base_login_history.json:/app/base_login_history.json
+      - ./backend/call_history.json:/app/call_history.json
+      - ./backend/download_history.json:/app/download_history.json
+      - ./backend/feedback_history.json:/app/feedback_history.json
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

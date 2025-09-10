@@ -1,0 +1,42 @@
+[
+  {
+    "timestamp": "2025-09-09T15:19:09.774370+09:00",
+    "name": "손봉균",
+    "affiliation": "13123124",
+    "contact": "213123213",
+    "email": "2132@412341243",
+    "pc_number": 1,
+    "message": "호출요청",
+    "type": "member"
+  },
+  {
+    "timestamp": "2025-09-09T15:19:15.536405+09:00",
+    "name": "손봉균",
+    "affiliation": "13123124",
+    "contact": "213123213",
+    "email": "2132@412341243",
+    "pc_number": 1,
+    "message": "호출요청",
+    "type": "member"
+  },
+  {
+    "timestamp": "2025-09-09T15:20:28.812284+09:00",
+    "name": "손봉균",
+    "affiliation": "정책세미나실",
+    "contact": "1212",
+    "email": "realp07@naver.com",
+    "pc_number": 1,
+    "message": "호출요청",
+    "type": "member"
+  },
+  {
+    "timestamp": "2025-09-09T15:21:18.824112+09:00",
+    "name": "손봉균",
+    "affiliation": "정책세미나실",
+    "contact": "1212",
+    "email": "23123213@243124213",
+    "pc_number": 1,
+    "message": "호출요청",
+    "type": "member"
+  }
+]
