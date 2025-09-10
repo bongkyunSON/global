@@ -5,16 +5,17 @@
 import cv2
 import os
 import base64
-import requests
 from typing import Optional
 
-# poster_chain 기능을 위한 추가 import
-from langchain_upstage import ChatUpstage
-from langchain_core.output_parsers import JsonOutputParser
-from langchain_core.runnables import RunnablePassthrough
+# LangChain 및 Gemini 관련 라이브러리로 교체
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.messages import HumanMessage
+from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
 from langchain_core.prompts import PromptTemplate
+from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 
-# 포스터 정보 추출을 위한 프롬프트 템플릿
+
+# 포스터 정보 추출을 위한 프롬프트 템플릿 (기존과 동일하게 유지)
 POSTER_ANALYSIS_PROMPT = PromptTemplate.from_template(
     """
     ### 역할 ###
@@ -48,46 +49,56 @@ POSTER_ANALYSIS_PROMPT = PromptTemplate.from_template(
     """
 )
 
+# --- Gemini 기반 분석을 위한 새로운 헬퍼 함수 ---
+
+def create_multimodal_message(input_dict: dict) -> list[HumanMessage]:
+    """이미지 경로와 텍스트 프롬프트를 받아 HumanMessage 객체를 생성합니다."""
+    file_path = input_dict["image_path"]
+    prompt = input_dict["prompt"]
+
+    file_extension = os.path.splitext(file_path)[1].lower()
+    if file_extension in [".jpg", ".jpeg"]:
+        image_type = "jpeg"
+    elif file_extension == ".png":
+        image_type = "png"
+    else:
+        raise ValueError("지원하지 않는 파일 형식입니다. JPG, PNG만 가능합니다.")
+
+    with open(file_path, "rb") as image_file:
+        encoded_image = base64.b64encode(image_file.read()).decode("utf-8")
+
+    message = HumanMessage(
+        content=[
+            {"type": "text", "text": prompt},
+            {
+                "type": "image_url",
+                "image_url": f"data:image/{image_type};base64,{encoded_image}",
+            },
+        ]
+    )
+    return [message]
+
 
 def perform_ocr(input_path, api_key=None):
-    """이미지에서 OCR 수행하여 텍스트 추출 (Upstage API 사용)"""
-    # Check file extension
-    ext = os.path.splitext(input_path)[1].lower()
-    if ext not in [".jpg", ".jpeg", ".png"]:
-        print("지원하지 않는 파일 형식입니다:", ext)
-        return "지원하지 않는 파일 형식입니다."
-
-    # 이미지 존재 확인
-    if not os.path.exists(input_path):
-        print("이미지 파일을 찾을 수 없습니다:", input_path)
-        return "이미지 파일을 찾을 수 없습니다."
-
-    # API 키 확인
+    """이미지에서 OCR 수행하여 텍스트 추출 (Gemini API 사용)"""
     if not api_key:
-        return "OCR API 키가 필요합니다."
+        return "Gemini API 키가 필요합니다."
 
     try:
-        url = "https://api.upstage.ai/v1/document-digitization"
-        headers = {"Authorization": f"Bearer {api_key}"}
-
-        files = {"document": open(input_path, "rb")}
-        data = {"model": "ocr"}
-        response = requests.post(url, headers=headers, files=files, data=data)
-
-        if response.status_code == 200:
-            result = response.json()
-            # Upstage API 응답에서 텍스트 추출
-            if "text" in result:
-                return result["text"]
-            elif "content" in result:
-                return result["content"]
-            else:
-                return str(result)
-        else:
-            return f"OCR API 오류: {response.status_code} - {response.text}"
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0, api_key=api_key)
+        
+        ocr_chain = RunnableLambda(create_multimodal_message) | llm | StrOutputParser()
+        
+        prompt_text = "이 이미지에서 보이는 모든 텍스트를 순서대로 정확하게 추출해줘."
+        ocr_text = ocr_chain.invoke({"image_path": input_path, "prompt": prompt_text})
+        
+        return ocr_text
 
     except Exception as e:
-        print(f"OCR 처리 중 오류 발생: {str(e)}")
+        import traceback
+        error_detail = traceback.format_exc()
+        print(f"OCR 처리 중 예외 발생: {str(e)}")
+        print(f"상세 에러: {error_detail}")
         return f"OCR 처리 중 오류 발생: {str(e)}"
 
 
@@ -289,9 +300,39 @@ def process_image_for_web(
         result["error"] = str(e)
         return result
 
+def _run_full_poster_analysis(file_path: str, api_key: str):
+    """OCR과 포스터 정보 분석을 모두 수행하는 내부 헬퍼 함수 (Gemini 사용)"""
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0, api_key=api_key)
+
+    # 1. OCR 체인
+    ocr_chain = RunnableLambda(create_multimodal_message) | llm | StrOutputParser()
+
+    # 2. JSON 추출 체인
+    json_parser = JsonOutputParser()
+    json_extraction_prompt = POSTER_ANALYSIS_PROMPT.partial(
+        instructions=json_parser.get_format_instructions()
+    )
+    json_extraction_chain = json_extraction_prompt | llm | json_parser
+
+    # 3. 두 체인을 연결하여 실행
+    chain = (
+        {"poster_context": ocr_chain}
+        | json_extraction_chain
+    )
+    
+    # OCR 텍스트를 별도로 얻기 위해 ocr_chain을 한 번 더 실행해야 하지만, 
+    # 효율성을 위해 전체 텍스트를 먼저 받고 그것을 json chain에 넘겨줍니다.
+    ocr_text = ocr_chain.invoke({"image_path": file_path, "prompt": "이 이미지의 텍스트를 모두 추출해줘."})
+    if "오류 발생" in ocr_text:
+         raise Exception(f"OCR 단계에서 오류 발생: {ocr_text}")
+
+    poster_info = json_extraction_chain.invoke({"poster_context": ocr_text})
+
+    return {"ocr_text": ocr_text, "poster_info": poster_info}
+
 
 def poster_analysis_for_web(file_path: str, api_key: str):
-    """포스터 이미지에서 구조화된 정보를 추출하는 함수"""
+    """포스터 이미지에서 구조화된 정보를 추출하는 함수 (Gemini 사용)"""
     result = {
         "success": False,
         "poster_info": {},
@@ -299,30 +340,8 @@ def poster_analysis_for_web(file_path: str, api_key: str):
     }
 
     try:
-        # 먼저 OCR로 텍스트 추출
-        ocr_text = perform_ocr(file_path, api_key)
-        
-        if not ocr_text or "오류" in ocr_text or "찾을 수 없습니다" in ocr_text:
-            result["error"] = "OCR 처리에 실패했습니다."
-            return result
-
-        # LangChain을 사용하여 포스터 정보 분석
-        json_parser = JsonOutputParser()
-        llm = ChatUpstage(api_key=api_key, model="solar-pro2-preview")
-        template = POSTER_ANALYSIS_PROMPT.partial(instructions=json_parser.get_format_instructions())
-
-        chain = (
-            {
-                "poster_context": RunnablePassthrough(),
-            }
-            | template
-            | llm
-            | json_parser
-        )
-
-        poster_info = chain.invoke({"poster_context": ocr_text})
-        
-        result["poster_info"] = poster_info
+        analysis_result = _run_full_poster_analysis(file_path, api_key)
+        result["poster_info"] = analysis_result["poster_info"]
         result["success"] = True
         return result
 
@@ -333,7 +352,7 @@ def poster_analysis_for_web(file_path: str, api_key: str):
 
 
 def extract_poster_info_with_ocr(file_path: str, api_key: str):
-    """OCR과 포스터 정보 추출을 함께 수행하는 함수"""
+    """OCR과 포스터 정보 추출을 함께 수행하는 함수 (Gemini 사용)"""
     result = {
         "success": False,
         "ocr_text": "",
@@ -342,33 +361,9 @@ def extract_poster_info_with_ocr(file_path: str, api_key: str):
     }
 
     try:
-        # OCR 처리
-        ocr_text = perform_ocr(file_path, api_key)
-        
-        if not ocr_text or "오류" in ocr_text or "찾을 수 없습니다" in ocr_text:
-            result["ocr_text"] = ocr_text or "OCR 처리 실패"
-            result["error"] = "OCR 처리에 실패했습니다."
-            return result
-        
-        result["ocr_text"] = ocr_text
-
-        # 포스터 정보 분석
-        json_parser = JsonOutputParser()
-        llm = ChatUpstage(api_key=api_key, model="solar-pro2-preview")
-        template = POSTER_ANALYSIS_PROMPT.partial(instructions=json_parser.get_format_instructions())
-
-        chain = (
-            {
-                "poster_context": RunnablePassthrough(),
-            }
-            | template
-            | llm
-            | json_parser
-        )
-
-        poster_info = chain.invoke({"poster_context": ocr_text})
-        
-        result["poster_info"] = poster_info
+        analysis_result = _run_full_poster_analysis(file_path, api_key)
+        result["ocr_text"] = analysis_result["ocr_text"]
+        result["poster_info"] = analysis_result["poster_info"]
         result["success"] = True
         return result
 
@@ -380,13 +375,48 @@ def extract_poster_info_with_ocr(file_path: str, api_key: str):
 
 # 사용 예시
 if __name__ == "__main__":
-    input_img = "test.jpg"  # 입력 이미지 경로
+    # 이 스크립트를 직접 실행할 경우, 환경 변수에서 API 키를 가져오도록 설정
+    # 예: export GOOGLE_API_KEY="your_api_key"
+    gemini_api_key = os.getenv("GOOGLE_API_KEY")
+    if not gemini_api_key:
+        print("경고: GOOGLE_API_KEY 환경 변수가 설정되지 않았습니다.")
+        # 필요하다면 아래에 직접 키를 입력하여 테스트할 수 있습니다.
+        # gemini_api_key = "..."
+    
+    input_img = "poster.jpeg"  # 분석할 이미지 경로
+    if not os.path.exists(input_img):
+        print(f"테스트 이미지 파일을 찾을 수 없습니다: {input_img}")
+    else:
+        print(f"--- 테스트 시작: {input_img} ---")
+        
+        # 1. OCR만 테스트
+        print("\n[1. OCR 단독 테스트]")
+        ocr_result = ocr_only_for_web(input_img, gemini_api_key)
+        if ocr_result["success"]:
+            print("OCR 성공:")
+            # 텍스트가 너무 길 수 있으므로 일부만 출력
+            print(ocr_result["ocr_text"][:300] + "...")
+        else:
+            print("OCR 실패:", ocr_result)
 
-    # OCR 수행
-    ocr_text = perform_ocr(input_img)
-    print("추출된 텍스트:")
-    print(ocr_text)
+        # 2. 포스터 분석만 테스트
+        print("\n[2. 포스터 분석 단독 테스트]")
+        analysis_result = poster_analysis_for_web(input_img, gemini_api_key)
+        if analysis_result["success"]:
+            import json
+            print("분석 성공:")
+            print(json.dumps(analysis_result["poster_info"], indent=2, ensure_ascii=False))
+        else:
+            print("분석 실패:", analysis_result)
 
-    # 이미지 리사이징
-    output_path = resize_image(input_img, width=400)
-    print(f"리사이징된 이미지 저장 경로: {output_path}")
+        # 3. OCR + 분석 함께 테스트
+        print("\n[3. OCR + 포스터 분석 통합 테스트]")
+        full_result = extract_poster_info_with_ocr(input_img, gemini_api_key)
+        if full_result["success"]:
+            print("통합 분석 성공:")
+            print("--- OCR 결과 ---")
+            print(full_result["ocr_text"][:300] + "...")
+            print("\n--- AI 분석 결과 ---")
+            print(json.dumps(full_result["poster_info"], indent=2, ensure_ascii=False))
+        else:
+            print("통합 분석 실패:", full_result)

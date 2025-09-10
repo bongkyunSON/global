@@ -1,15 +1,49 @@
-import requests
+import base64
+from pprint import pprint
 
-from langchain_upstage import ChatUpstage
-from langchain_core.output_parsers import JsonOutputParser
-from langchain_core.runnables import RunnablePassthrough
+from langchain_core.messages import HumanMessage
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.runnables import RunnableLambda
+from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
 from langchain_core.prompts import PromptTemplate
 
 
-api_key = "up_bOaHQqlyLHKwnqR0AS9dbkUJt3BaB"
+api_key = "AIzaSyASVj38hqqlBK0kMl4_hl4gpODTFin_b9E"
 
 
-prompt = PromptTemplate.from_template(
+# 두 작업(OCR, JSON 추출)에 모두 사용할 LLM
+llm = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash",
+    temperature=0,
+    max_tokens=None,
+    timeout=None,
+    max_retries=2,
+    api_key=api_key,
+)
+
+
+# --- 1. OCR(이미지에서 텍스트 추출)를 위한 부분 ---
+
+def create_multimodal_message(input_dict: dict) -> list[HumanMessage]:
+    """이미지 경로와 텍스트 프롬프트를 받아 HumanMessage 객체를 생성합니다."""
+    with open(input_dict["image_path"], "rb") as image_file:
+        encoded_image = base64.b64encode(image_file.read()).decode("utf-8")
+
+    message = HumanMessage(
+        content=[
+            {"type": "text", "text": input_dict["prompt"]},
+            {"type": "image_url", "image_url": f"data:image/jpeg;base64,{encoded_image}"},
+        ]
+    )
+    return [message]
+
+# 이미지에서 텍스트를 추출하는 체인
+ocr_chain = RunnableLambda(create_multimodal_message) | llm | StrOutputParser()
+
+
+# --- 2. 추출된 텍스트에서 정보를 JSON 형식으로 추출하기 위한 부분 ---
+
+json_prompt_template = PromptTemplate.from_template(
     """
     ### 역할 ###
     너는 해당 포스터의 내용을 보고 정보를 추출해야합니다.
@@ -39,48 +73,35 @@ prompt = PromptTemplate.from_template(
 
     """
 )
+json_parser = JsonOutputParser()
+# prompt 템플릿에 출력 형식(json) 정보를 미리 주입합니다.
+json_extraction_prompt = json_prompt_template.partial(
+    instructions=json_parser.get_format_instructions()
+)
+
+# 텍스트에서 JSON을 추출하는 체인
+json_extraction_chain = json_extraction_prompt | llm | json_parser
 
 
-def poster_info(apikey, filename):
-    api_key = apikey
-    filename = (
-        "/Users/sbk/global/rtsp_toss_version/toss-library/APOS_COVER1750126279419.jpg"
-    )
+# --- 3. 위에서 만든 두 체인을 하나로 연결 ---
 
-    url = "https://api.upstage.ai/v1/document-digitization"
-    headers = {"Authorization": f"Bearer {api_key}"}
-
-    files = {"document": open(filename, "rb")}
-    data = {"model": "ocr"}
-    response = requests.post(url, headers=headers, files=files, data=data)
-
-    result = response.json()
-    text_result = result["pages"][0]["text"]
-
-
-    json_parser = JsonOutputParser()
-
-    llm = ChatUpstage(api_key=api_key, model="solar-pro2-preview")
-    template = prompt.partial(instructions=json_parser.get_format_instructions())
-
-    chain = (
-        {
-            "poster_context": RunnablePassthrough(),
-        }
-        | template
-        | llm
-        | json_parser
-    )
-
-    result = chain.invoke({"poster_context": text_result})
-
-    return result
-
+chain = (
+    # chain.invoke의 입력이 ocr_chain으로 전달되어 텍스트가 추출됩니다.
+    # 추출된 텍스트는 "poster_context" 키의 값이 됩니다.
+    {"poster_context": ocr_chain}
+    # 위에서 만들어진 {"poster_context": "추출된 텍스트"}가 
+    # json_extraction_chain으로 전달됩니다.
+    | json_extraction_chain
+)
 
 
 if __name__ == "__main__":
-    result = poster_info(
-        api_key,
-        "/Users/sbk/global/rtsp_toss_version/toss-library/APOS_COVER1750126279419.jpg",
-    )
-    print(result)
+    image_file_path = "/Users/sbk/global/rtsp_toss_version/poster.jpeg"
+    # OCR 단계에서 사용할 프롬프트
+    prompt_text = "이 이미지에서 보이는 모든 텍스트를 순서대로 정확하게 추출해줘."
+
+    # 전체 체인 실행
+    result = chain.invoke({"image_path": image_file_path, "prompt": prompt_text})
+    
+    print("--- 최종 추출 결과 ---")
+    pprint(result)

@@ -319,7 +319,7 @@ const PosterAnalysisCard = () => {
           <div className="form-group" style={{ marginBottom: 'var(--spacing-lg)' }}>
             <label className="form-label">
               <Key size={16} style={{ display: 'inline', marginRight: '4px' }} />
-              API 키 (Upstage)
+              API 키 (Gemini)
             </label>
             
             {savedApiKeys.length > 0 && (

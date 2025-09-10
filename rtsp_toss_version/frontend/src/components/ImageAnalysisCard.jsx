@@ -377,7 +377,7 @@ const ImageAnalysisCard = () => {
         <div className="form-group" style={{ marginBottom: 'var(--spacing-lg)' }}>
           <label className="form-label">
             <Key size={16} style={{ display: 'inline', marginRight: '4px' }} />
-            API 키 (Upstage)
+            API 키 (Gemini)
           </label>
           
           {savedApiKeys.length > 0 && (
@@ -431,7 +431,7 @@ const ImageAnalysisCard = () => {
                 <input
                   type="text"
                   className="input"
-                  placeholder="Upstage API 키를 입력하세요..."
+                  placeholder="Gemini API 키를 입력하세요..."
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                 />
@@ -456,7 +456,7 @@ const ImageAnalysisCard = () => {
           )}
           
           <small style={{ color: 'var(--gray-500)', fontSize: '11px', display: 'block', marginTop: '4px' }}>
-            Upstage API 키가 필요합니다. 저장된 키는 브라우저에 안전하게 보관됩니다.
+            Gemini API 키가 필요합니다. 저장된 키는 브라우저에 안전하게 보관됩니다.
           </small>
         </div>
 
